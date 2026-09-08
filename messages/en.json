@@ -15,7 +15,8 @@
     "createAccount": "Create account"
   },
   "Sidebar": {
-    "title": "CRM Template for WhatsApp",
+    "concierge": "Concierge",
+    "title": "WhatsApp CRM",
     "dashboard": "Dashboard",
     "inbox": "Inbox",
     "notifications": "Notifications",
@@ -41,6 +42,7 @@
     "menuSignOut": "Sign out"
   },
   "Header": {
+    "concierge": "Concierge",
     "dashboard": "Dashboard",
     "inbox": "Inbox",
     "notifications": "Notifications",

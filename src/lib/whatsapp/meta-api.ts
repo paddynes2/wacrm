@@ -12,6 +12,12 @@
 const META_API_VERSION = 'v21.0'
 const META_API_BASE = `https://graph.facebook.com/${META_API_VERSION}`
 
+function assertMetaOutboundEnabled() {
+  if (process.env.WACRM_BRIDGE_URL?.trim()) {
+    throw new Error('Meta outbound is disabled for this concierge workspace. Use Concierge to review and approve messages.')
+  }
+}
+
 export interface MetaSendResult {
   messageId: string
 }
@@ -232,6 +238,7 @@ export interface SendTextMessageArgs {
 export async function sendTextMessage(
   args: SendTextMessageArgs
 ): Promise<MetaSendResult> {
+  assertMetaOutboundEnabled()
   const { phoneNumberId, accessToken, to, text, contextMessageId } = args
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
   const body: Record<string, unknown> = {
@@ -290,6 +297,7 @@ export interface SendMediaMessageArgs {
 export async function sendMediaMessage(
   args: SendMediaMessageArgs,
 ): Promise<MetaSendResult> {
+  assertMetaOutboundEnabled()
   const { phoneNumberId, accessToken, to, kind, link, caption, filename, contextMessageId } = args
   if (!link) throw new Error('sendMediaMessage requires a link.')
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
@@ -376,6 +384,7 @@ export interface SendTemplateMessageArgs {
 export async function sendTemplateMessage(
   args: SendTemplateMessageArgs
 ): Promise<MetaSendResult> {
+  assertMetaOutboundEnabled()
   const {
     phoneNumberId,
     accessToken,
@@ -680,6 +689,7 @@ export interface SendReactionMessageArgs {
 export async function sendReactionMessage(
   args: SendReactionMessageArgs
 ): Promise<MetaSendResult> {
+  assertMetaOutboundEnabled()
   const { phoneNumberId, accessToken, to, targetMessageId, emoji } = args
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
   const response = await fetch(url, {
@@ -766,6 +776,7 @@ export interface SendInteractiveButtonsArgs {
 export async function sendInteractiveButtons(
   args: SendInteractiveButtonsArgs
 ): Promise<MetaSendResult> {
+  assertMetaOutboundEnabled()
   const {
     phoneNumberId, accessToken, to,
     bodyText, headerText, footerText, buttons, contextMessageId,
@@ -874,6 +885,7 @@ export interface SendInteractiveListArgs {
 export async function sendInteractiveList(
   args: SendInteractiveListArgs
 ): Promise<MetaSendResult> {
+  assertMetaOutboundEnabled()
   const {
     phoneNumberId, accessToken, to,
     bodyText, buttonLabel, headerText, footerText, sections, contextMessageId,

@@ -171,6 +171,18 @@ export function MessageThread({
   const { user } = useAuth();
   const { getPresence, getRow, now } = usePresence();
   const [loading, setLoading] = useState(false);
+  const [draftOnly, setDraftOnly] = useState(false);
+  const [stagedDraftIds, setStagedDraftIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let active = true;
+    fetch('/api/whatsapp/send').then(async response => {
+      if (response.ok) {
+        const mode = await response.json();
+        if (active) setDraftOnly(mode.draft_only === true);
+      }
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -480,7 +492,7 @@ export function MessageThread({
         created_at: new Date().toISOString(),
         reply_to_message_id: replyToId,
       };
-      onNewMessage(optimisticMsg);
+      if (!draftOnly) onNewMessage(optimisticMsg);
       setReplyTo(null);
 
       try {
@@ -497,27 +509,42 @@ export function MessageThread({
 
         const payload = await res.json().catch(() => ({}));
 
+        if (res.ok && payload.draft_staged === true) {
+          setStagedDraftIds(ids => new Set([...ids, tempId]));
+          toast.success('Draft ready in Concierge', {
+            action: { label: 'Review draft', onClick: () => { window.location.href = '/concierge'; } },
+          });
+          return true;
+        }
+
         if (!res.ok) {
           const reason = payload?.error || `HTTP ${res.status}`;
           console.error("Failed to send message:", reason);
-          toast.error(`Failed to send: ${reason}`);
+          toast.error(`${draftOnly ? "Could not prepare draft" : "Failed to send"}: ${reason}`);
           // Mark the optimistic bubble as failed so the user sees what happened
           onUpdateMessage(tempId, { status: "failed" });
-          return;
+          return false;
+        }
+
+        if (draftOnly) {
+          toast.error("Could not confirm draft status. Check Concierge before retrying.");
+          return false;
         }
 
         // Success — the realtime INSERT event will replace the temp bubble
         // with the real DB row. If realtime hasn't arrived yet, at least
         // flip status to 'sent' so the UI stops showing "sending".
         onUpdateMessage(tempId, { status: "sent" });
+        return true;
       } catch (err) {
         console.error("Failed to send message:", err);
         const reason = err instanceof Error ? err.message : "network error";
-        toast.error(`Failed to send: ${reason}`);
+        toast.error(draftOnly ? "Could not confirm draft status. Check Concierge before retrying." : `Failed to send: ${reason}`);
         onUpdateMessage(tempId, { status: "failed" });
+        return false;
       }
     },
-    [conversation, onNewMessage, onUpdateMessage]
+    [conversation, onNewMessage, onUpdateMessage, draftOnly]
   );
 
   const handleSendMedia = useCallback(
@@ -880,7 +907,7 @@ export function MessageThread({
   }
 
   const displayName = contact.name || contact.phone;
-  const messageGroups = groupMessagesByDate(messages);
+  const messageGroups = groupMessagesByDate(messages.filter(message => !stagedDraftIds.has(message.id)));
   const currentStatus = STATUS_OPTIONS.find(
     (s) => s.value === conversation.status
   );
@@ -1129,6 +1156,19 @@ export function MessageThread({
                       const next = own?.emoji === emoji ? "" : emoji;
                       void postReaction(msg.id, next);
                     };
+                    if (draftOnly) return (
+                      <div key={msg.id} className={cn("flex w-full", msg.sender_type === "agent" || msg.sender_type === "bot" ? "justify-end" : "justify-start")}>
+                        <div className="min-w-0 max-w-[75%]">
+                          <MessageBubble
+                            message={msg}
+                            reply={reply}
+                            reactions={msgReactions}
+                            currentUserId={user?.id}
+                            onOpenMedia={handleMediaChange}
+                          />
+                        </div>
+                      </div>
+                    );
                     return (
                       <MessageActions
                         key={msg.id}
@@ -1175,7 +1215,8 @@ export function MessageThread({
       {/* Composer */}
       <MessageComposer
         conversationId={conversation.id}
-        sessionExpired={sessionInfo.expired}
+        sessionExpired={!draftOnly && sessionInfo.expired}
+        draftOnly={draftOnly}
         onSend={handleSend}
         onSendMedia={handleSendMedia}
         onSendInteractive={handleSendInteractive}

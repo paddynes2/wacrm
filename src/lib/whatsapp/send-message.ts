@@ -20,6 +20,7 @@
 // ============================================================
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { bridgeRequest } from '@/lib/concierge/bridge';
 
 import {
   sendTextMessage,
@@ -234,6 +235,28 @@ export async function sendMessageToConversation(
   }
 
   const contact = conversation.contact;
+  if (process.env.WACRM_BRIDGE_URL?.trim()) {
+    // Bridge accounts must never fall through to the independent Meta sender.
+    if (!contact?.id || contact.account_id !== accountId) {
+      throw new SendMessageError('not_found', 'Contact not found in account', 404);
+    }
+    if (messageType !== 'text' || replyToMessageId) {
+      throw new SendMessageError('bad_request', 'Concierge currently supports plain text drafts. Use Concierge for introductions and scheduling.', 400);
+    }
+    try {
+      const result = await bridgeRequest(accountId, 'manual_draft', { contact: {
+        id: contact.id, phone: contact.phone, name: contact.name,
+        email: contact.email, company: contact.company,
+      }, text: contentText, conversation_id: conversationId });
+      const staged = result.result as { status?: string; decision?: { id?: string } } | undefined;
+      if (staged?.status !== 'needs_approval' || typeof staged.decision?.id !== 'string' || !staged.decision.id.trim()) {
+        throw new Error('Bridge did not confirm a staged draft');
+      }
+    } catch {
+      throw new SendMessageError('bridge_error', 'Could not confirm draft status. Check Concierge before retrying.', 502);
+    }
+    throw new SendMessageError('draft_staged', 'Draft staged in Concierge for approval', 409);
+  }
   if (!contact?.phone) {
     throw new SendMessageError(
       'bad_request',

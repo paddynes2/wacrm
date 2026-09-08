@@ -174,6 +174,9 @@ export async function POST(request: Request) {
       })
     } catch (err) {
       if (err instanceof SendMessageError) {
+        if (err.code === 'draft_staged') {
+          return NextResponse.json({ draft_staged: true, message: 'Draft ready in Concierge', concierge_url: '/concierge' }, { status: 202 })
+        }
         return NextResponse.json(
           { error: err.message },
           { status: err.status }
@@ -187,6 +190,14 @@ export async function POST(request: Request) {
     console.error('Error in WhatsApp send POST:', error)
     return toErrorResponse(error)
   }
+}
+
+/** Only exposes composer mode; never account credentials or bridge connection details. */
+export async function GET() {
+  try {
+    await requireRole('viewer')
+    return NextResponse.json({ draft_only: Boolean(process.env.WACRM_BRIDGE_URL?.trim()) })
+  } catch (error) { return toErrorResponse(error) }
 }
 
 type SendSupabase = Awaited<ReturnType<typeof createClient>>

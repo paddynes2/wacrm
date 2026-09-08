@@ -42,3 +42,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local concierge runtime state, screenshots and logs.
+.local/
+supabase/.branches/
+supabase/.temp/

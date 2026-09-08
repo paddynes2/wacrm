@@ -112,7 +112,8 @@ interface MediaDraft {
 interface MessageComposerProps {
   conversationId: string;
   sessionExpired: boolean;
-  onSend: (text: string, replyToId?: string) => void;
+  draftOnly?: boolean;
+  onSend: (text: string, replyToId?: string) => void | boolean | Promise<void | boolean>;
   onSendMedia: (payload: SendMediaPayload) => void;
   onSendInteractive: (payload: InteractiveMessagePayload, replyToId?: string) => void;
   onOpenTemplates: () => void;
@@ -134,6 +135,7 @@ const OPUS_ENCODER_PATH = "/opus/encoderWorker.min.js";
 export function MessageComposer({
   conversationId,
   sessionExpired,
+  draftOnly = false,
   onSend,
   onSendMedia,
   onSendInteractive,
@@ -226,7 +228,8 @@ export function MessageComposer({
 
     setSending(true);
     try {
-      onSend(trimmed, replyTo?.id);
+      const accepted = await onSend(trimmed, draftOnly ? undefined : replyTo?.id);
+      if (accepted === false) return;
       setText("");
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
@@ -234,7 +237,7 @@ export function MessageComposer({
     } finally {
       setSending(false);
     }
-  }, [text, sending, sessionExpired, onSend, replyTo?.id]);
+  }, [text, sending, sessionExpired, onSend, replyTo?.id, draftOnly]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -631,8 +634,10 @@ export function MessageComposer({
       ) : (
         <div className="flex items-end gap-2">
           {/* Attach menu — photo / video / document / voice. */}
+          {!draftOnly && <>
           <DropdownMenu>
             <DropdownMenuTrigger
+              aria-label={t("attachMedia")}
               disabled={inputsDisabled || busy}
               title={
                 readOnly
@@ -673,6 +678,7 @@ export function MessageComposer({
               24h window like free-form text (interactive requires it). */}
           <DropdownMenu>
             <DropdownMenuTrigger
+              aria-label={t("moreActions")}
               disabled={inputsDisabled}
               title={
                 readOnly
@@ -703,11 +709,13 @@ export function MessageComposer({
             canAct={!readOnly}
             gateReason="send messages"
             title={readOnly ? undefined : t("sendTemplate")}
+            aria-label={t("sendTemplate")}
             className="h-9 w-9 shrink-0 p-0 text-muted-foreground hover:text-foreground"
             onClick={onOpenTemplates}
           >
             <LayoutTemplate className="h-4 w-4" />
           </GatedButton>
+          </>}
 
           <GatedButton
             variant="ghost"
@@ -716,6 +724,7 @@ export function MessageComposer({
             gateReason="send messages"
             disabled={drafting}
             title={readOnly ? undefined : t("draftWithAI")}
+            aria-label={t("draftWithAI")}
             className="h-9 w-9 shrink-0 p-0 text-muted-foreground hover:text-primary"
             onClick={handleDraft}
           >
@@ -728,6 +737,7 @@ export function MessageComposer({
 
           <textarea
             ref={textareaRef}
+            aria-label={draftOnly ? "Message draft" : "Message"}
             value={text}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
@@ -738,7 +748,7 @@ export function MessageComposer({
                   ? t("sessionExpiredPlaceholder")
                   : t("typeMessagePlaceholder")
             }
-            disabled={sessionExpired || readOnly}
+            disabled={sessionExpired || readOnly || sending}
             rows={1}
             // Textarea keeps its own inline title — the GatedButton
             // wrapping pattern doesn't apply to non-button inputs.
@@ -756,12 +766,16 @@ export function MessageComposer({
             gateReason="send messages"
             disabled={!text.trim() || sessionExpired || sending}
             onClick={handleSend}
-            className="h-9 w-9 shrink-0 bg-primary p-0 hover:bg-primary/90 disabled:opacity-40"
+            aria-label={draftOnly ? "Prepare draft" : "Send message"}
+            title={draftOnly ? "Prepare a text draft for review in Concierge" : "Send message"}
+            className={cn("h-9 shrink-0 bg-primary hover:bg-primary/90 disabled:opacity-40", draftOnly ? "px-3" : "w-9 p-0")}
           >
-            <Send className="h-4 w-4" />
+            {draftOnly ? "Prepare draft" : <Send className="h-4 w-4" />}
           </GatedButton>
         </div>
       )}
+
+      {draftOnly && <p className="mt-2 text-xs text-muted-foreground">Text drafts require approval in Concierge. Attachments, quoted replies and reactions are unavailable here.</p>}
 
       {/* Hint sits outside the flex row so its height doesn't push
           `items-end` buttons below the textarea. Indented to line up
