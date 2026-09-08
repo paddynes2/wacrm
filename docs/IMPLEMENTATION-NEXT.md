@@ -43,13 +43,15 @@ Fleet targeted regression, real local HTTP journeys and desktop/mobile browser c
 ## Verified checkpoints
 
 - WACRM full suite: 948 tests pass; TypeScript and scoped lint pass.
-- Fleet combined concierge/transport/calendar/queue/runtime regression: 341 tests pass.
+- Fleet final concierge/transport/calendar/queue/runtime/amendment regression: 372 tests pass.
 - Real local HTTP: original journey 61 requests; new operations journey 36 requests.
 - Browser: imported Morgan QA with source notes, created sample sequence, reconciled
   two verified outcome notes, checked desktop Operations and mobile Connections/Operations.
 - Existing production framework warnings remain; no credential/config/deployment edits.
 - Final production build succeeds with all new routes. Both HTTP journeys passed again
   after restarting the final runtime. Existing test data survived the restart.
+- App integration commit `fffc123`; engine integration `a4e6e74cb`; amendment library
+  `cbd665c1f`. Local commits only. Shared OS documentation updated separately.
 
 ## Explicit boundaries
 
