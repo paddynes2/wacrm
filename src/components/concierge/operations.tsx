@@ -12,12 +12,21 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 type Step = { hours: string; text: string };
 type Contact = { id: string; name: string; phone: string; started?: boolean };
@@ -58,6 +67,7 @@ type Operations = {
     intent: string;
     suggestion: string;
     requires_review: boolean;
+    revision: number;
   }[];
   watches: Watch[];
   contacts: Contact[];
@@ -100,6 +110,16 @@ export function ConciergeOperations() {
   const [watchContact, setWatchContact] = useState('');
   const [chatId, setChatId] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [reply, setReply] = useState<{
+    contactId: string;
+    name: string;
+    revision: number;
+    text: string;
+    generated: boolean;
+    stale: boolean;
+  } | null>(null);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyError, setReplyError] = useState('');
   const mutation = useRef(false);
   const activeRead = useRef<AbortController | null>(null);
   const refresh = useCallback(async () => {
@@ -238,6 +258,99 @@ export function ConciergeOperations() {
       setBusy('');
     }
   }
+  async function prepareReply(suggestion: Operations['suggestions'][number]) {
+    if (mutation.current) return;
+    mutation.current = true;
+    setBusy('prepare_reply');
+    setReplyError('');
+    setReply({
+      contactId: suggestion.contact_id,
+      name: suggestion.name,
+      revision: suggestion.revision,
+      text: '',
+      generated: false,
+      stale: false,
+    });
+    setReplyOpen(true);
+    try {
+      const response = await fetch('/api/concierge/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact_id: suggestion.contact_id,
+          purpose: 'reply',
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok)
+        throw new Error(body.error || 'The AI draft could not be prepared.');
+      if (typeof body.draft !== 'string' || !body.draft.trim())
+        throw new Error('The provider returned an empty draft.');
+      setReply((current) =>
+        current ? { ...current, text: body.draft, generated: true } : current
+      );
+    } catch (err) {
+      setReplyError(
+        err instanceof Error
+          ? err.message
+          : 'AI drafting is temporarily unavailable.'
+      );
+    } finally {
+      mutation.current = false;
+      setBusy('');
+    }
+  }
+  async function stageReply() {
+    if (
+      mutation.current ||
+      !reply ||
+      !reply.text.trim() ||
+      reply.stale ||
+      !Number.isInteger(reply.revision)
+    )
+      return;
+    mutation.current = true;
+    setBusy('stage_reply');
+    setReplyError('');
+    try {
+      const response = await fetch('/api/concierge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'draft',
+          contact_id: reply.contactId,
+          revision: reply.revision,
+          text: reply.text.trim(),
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        if (response.status === 409) {
+          setReply((current) =>
+            current ? { ...current, stale: true } : current
+          );
+          throw new Error(
+            `${body.error || 'The conversation changed.'} Your edited draft is retained. Refresh Operations and review the latest conversation in Concierge before preparing another reply. This draft keeps its original revision and cannot be staged again.`
+          );
+        }
+        throw new Error(body.error || 'The draft could not be staged.');
+      }
+      setReplyOpen(false);
+      setReply(null);
+      setNotice('Reply staged for approval in Concierge. No message was sent.');
+      if (body.crm_warning) setError(body.crm_warning);
+      await refresh();
+    } catch (err) {
+      setReplyError(
+        err instanceof Error
+          ? err.message
+          : 'The result is uncertain. Check Concierge before trying again.'
+      );
+    } finally {
+      mutation.current = false;
+      setBusy('');
+    }
+  }
   async function createCampaign() {
     const delays = steps.map((step) => Number(step.hours));
     if (
@@ -354,6 +467,15 @@ export function ConciergeOperations() {
         <div role="status" className="bg-card rounded-lg border p-4 text-sm">
           {notice}
         </div>
+      )}
+      {reply?.generated && !replyOpen && (
+        <Button
+          variant="outline"
+          disabled={!!busy}
+          onClick={() => setReplyOpen(true)}
+        >
+          <Sparkles className="size-4" /> Resume reply review for {reply.name}
+        </Button>
       )}
       {loading && !data && (
         <div
@@ -692,6 +814,17 @@ export function ConciergeOperations() {
                   >
                     Review in Concierge <ArrowRight className="size-3" />
                   </Link>
+                  <div>
+                    <Button
+                      variant="outline"
+                      disabled={
+                        disabled || !Number.isInteger(suggestion.revision)
+                      }
+                      onClick={() => prepareReply(suggestion)}
+                    >
+                      <Sparkles className="size-4" /> Prepare AI reply
+                    </Button>
+                  </div>
                 </div>
               ))}
             </section>
@@ -873,6 +1006,108 @@ export function ConciergeOperations() {
           </section>
         </>
       )}
+      <Dialog
+        open={replyOpen}
+        onOpenChange={(open) => {
+          if (!mutation.current) setReplyOpen(open);
+        }}
+      >
+        <DialogContent
+          showCloseButton={!busy}
+          className="max-h-[90dvh] overflow-y-auto sm:max-w-xl"
+        >
+          <DialogHeader>
+            <DialogTitle>
+              Review reply to {reply?.name || 'contact'}
+            </DialogTitle>
+            <DialogDescription>
+              Review the wording against the conversation. Staging creates an
+              approval draft in Concierge; it does not send a message.
+            </DialogDescription>
+          </DialogHeader>
+          {busy === 'prepare_reply' && (
+            <p
+              role="status"
+              className="text-muted-foreground flex items-center gap-2 text-sm"
+            >
+              <Loader2 className="size-4 animate-spin" /> Preparing a reply from
+              the conversation and your brief…
+            </p>
+          )}
+          {reply?.generated && (
+            <>
+              <Badge variant="secondary" className="w-fit">
+                Source: AI draft · Review required
+              </Badge>
+              <label className="space-y-2 text-sm">
+                <span>Editable reply</span>
+                <Textarea
+                  aria-label="Editable AI reply"
+                  className="min-h-56"
+                  value={reply.text}
+                  maxLength={4000}
+                  disabled={!!busy}
+                  onChange={(event) =>
+                    setReply((current) =>
+                      current
+                        ? { ...current, text: event.target.value }
+                        : current
+                    )
+                  }
+                />
+              </label>
+              <p className="text-muted-foreground text-xs">
+                {reply.text.length}/4,000 characters · Based on conversation
+                revision {reply.revision}
+              </p>
+            </>
+          )}
+          {replyError && (
+            <p
+              role="alert"
+              className="border-destructive/30 bg-destructive/5 text-destructive rounded-lg border p-3 text-sm"
+            >
+              {replyError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={!!busy}
+              onClick={() => setReplyOpen(false)}
+            >
+              Close
+            </Button>
+            {reply?.stale && (
+              <Button
+                variant="outline"
+                disabled={!!busy || loading}
+                onClick={() => void refresh()}
+              >
+                <RefreshCw className="size-4" /> Refresh Operations
+              </Button>
+            )}
+            <Button
+              disabled={
+                !!busy ||
+                !reply?.generated ||
+                !reply.text.trim() ||
+                reply.text.length > 4000 ||
+                reply.stale ||
+                !Number.isInteger(reply.revision)
+              }
+              onClick={stageReply}
+            >
+              {busy === 'stage_reply' ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <ArrowRight className="size-4" />
+              )}{' '}
+              Stage for approval
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
