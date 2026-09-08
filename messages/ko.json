@@ -16,6 +16,9 @@
   },
   "Sidebar": {
     "concierge": "컨시어지",
+    "prospects": "Prospects",
+    "operations": "Operations",
+    "connections": "Connections",
     "title": "WhatsApp CRM",
     "dashboard": "대시보드",
     "inbox": "인박스",
@@ -42,6 +45,9 @@
     "menuSignOut": "로그아웃"
   },
   "Header": {
+    "prospects": "Prospects",
+    "operations": "Operations",
+    "connections": "Connections",
     "concierge": "컨시어지",
     "dashboard": "대시보드",
     "inbox": "인박스",

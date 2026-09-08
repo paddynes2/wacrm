@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { LiveApproval } from './live-approval';
 import {
   useCallback,
   useEffect,
@@ -964,10 +965,7 @@ export function ConciergeWorkspace() {
                                 Approve in simulation
                               </Button>
                             ) : (
-                              <p className="text-muted-foreground mt-3 text-xs">
-                                Review this action through your connected
-                                approval workflow.
-                              </p>
+                              <LiveApproval decision={decision} busy={busy} onConfirm={() => request('execute_approved', {decision_id:decision.id,digest:decision.digest})} />
                             )}
                             <Button
                               variant="outline"

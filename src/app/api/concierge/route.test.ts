@@ -51,6 +51,16 @@ function request(body: unknown, origin = 'http://localhost:8316') {
   });
 }
 describe('CRM account to concierge boundary', () => {
+  it('binds live attestation to authenticated user and canonical contact', async () => {
+    const result = await POST(request({action:'execute_approved',contact_id:contactId,decision_id:'d1',digest:'digest',attested_by:'spoof'}));
+    expect(result.status).toBe(200);
+    expect(f.bridge).toHaveBeenCalledWith(account,'execute_approved',{decision_id:'d1',digest:'digest',attested_by:account,contact:{id:contactId,name:'Bond',phone:'+27820000002'}});
+  });
+  it('accepts formatting on an explicitly international native CRM phone', async () => {
+    f.query.maybeSingle.mockResolvedValue({data:{id:contactId,name:'Bond',phone:'+27 (82) 000-0002'}});
+    expect((await POST(request({action:'draft',contact_id:contactId,text:'Hello'}))).status).toBe(200);
+    expect(f.bridge).toHaveBeenCalledWith(account,'draft',{text:'Hello',contact:{id:contactId,name:'Bond',phone:'+27820000002'}});
+  });
   it('refuses cross-origin mutation before session or network work', async () => {
     expect(
       (await POST(request({ action: 'draft' }, 'https://evil.example'))).status

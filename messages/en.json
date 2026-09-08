@@ -16,6 +16,9 @@
   },
   "Sidebar": {
     "concierge": "Concierge",
+    "prospects": "Prospects",
+    "operations": "Operations",
+    "connections": "Connections",
     "title": "WhatsApp CRM",
     "dashboard": "Dashboard",
     "inbox": "Inbox",
@@ -42,6 +45,9 @@
     "menuSignOut": "Sign out"
   },
   "Header": {
+    "prospects": "Prospects",
+    "operations": "Operations",
+    "connections": "Connections",
     "concierge": "Concierge",
     "dashboard": "Dashboard",
     "inbox": "Inbox",

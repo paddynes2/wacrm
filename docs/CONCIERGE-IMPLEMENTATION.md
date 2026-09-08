@@ -1,5 +1,10 @@
 # Concierge product implementation
 
+Latest continuation: [IMPLEMENTATION-NEXT.md](IMPLEMENTATION-NEXT.md) records the durable
+worker, sequences, prospect import, connection readiness, live approval integration and CRM
+reconciliation. Scope below describes the first WACRM adoption checkpoint; the continuation
+supersedes its statements about missing workers, sequencing and live approval endpoints.
+
 Upstream WACRM MIT source pinned at 98b5bd26e8feacacfd4b74ff58411acb8154d212.
 Implementation worktree: C:/wacrm-product, branch codex/concierge-product.
 Fleet engine worktree: C:/wacwt, branch codex/wa-concierge-20260908.

@@ -76,6 +76,11 @@ export async function bridgeStatus(accountId: string) {
   return call(`/workspace/${accountId}/status`);
 }
 
+export async function bridgeOperations(accountId: string, payload?: Record<string, unknown>) {
+  if (!isUuid(accountId)) throw new BridgeError('Invalid account.', 400);
+  return call(`/workspace/${accountId}/operations`, payload ? 'POST' : 'GET', payload);
+}
+
 export async function bridgeRequest(
   accountId: string,
   action: string,

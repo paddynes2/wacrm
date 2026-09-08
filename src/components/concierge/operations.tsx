@@ -75,7 +75,7 @@ type Operations = {
 const INITIAL_STEPS: Step[] = [
   {
     hours: '0',
-    text: 'Hi {{name}}, I’m reaching out on behalf of {{principal_name}}. {{fit}} Would you be open to a conversation?',
+    text: "Hi {{name}}, I'm Chris, {{principal_name}}'s AI assistant. {{fit}} Would you be open to an introduction?",
   },
   {
     hours: '48',

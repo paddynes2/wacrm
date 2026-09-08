@@ -11,6 +11,15 @@ messages or calendar invitations are sent.
 
 ## Try it
 
+New pages: `/prospects` imports sourced CSV with preview/selection; `/operations` creates
+draft sequences, processes due work, reviews incoming suggestions and synchronizes CRM
+outcomes; `/connections` shows what is configured and what is still unverified.
+Start an opportunity and record contact eligibility before enrolling it in a sequence.
+The local worker checks every 30 seconds. A finished queue job means a draft is staged,
+not delivered. Follow-ups wait for the exact preceding verified message and stop on reply.
+Use the Operations AI reply button only after configuring a provider; review/edit its
+output before staging. Existing chat watches read providers only in live mode.
+
 1. Open Contacts to inspect Bond and Stuart or add a contact. Open Pipelines for the
    seeded introduction pipeline and referral deal. Inbox contains saved test conversations.
 2. Open Concierge. Add an opportunity from a CRM contact and record why it fits.
@@ -50,6 +59,7 @@ With the app running:
 npx tsc --noEmit
 npm test -- --run
 python scripts/test-local-concierge.py
+python scripts/test-local-operations.py
 ```
 
 The HTTP test creates separate local test accounts, permits only loopback requests and

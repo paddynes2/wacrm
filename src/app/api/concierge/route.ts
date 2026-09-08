@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sameOrigin } from '@/lib/concierge/origin';
+import { normalizeProspectPhone } from '@/lib/concierge/prospecting';
+import { reconcileConcierge } from '@/lib/concierge/reconcile';
 import { requireRole, toErrorResponse } from '@/lib/auth/account';
 import {
   checkRateLimit,
@@ -31,6 +33,7 @@ const ACTIONS = new Set([
   'book',
   'approve',
   'decline',
+  'execute_approved',
 ]);
 const SETUP_FIELDS = [
   'principal_name',
@@ -57,6 +60,7 @@ const ACTION_FIELDS = [
   'slot',
   'summary',
   'decision_id',
+  'digest',
   'purpose',
   'reason',
 ];
@@ -156,9 +160,12 @@ export async function POST(request: Request) {
         { error: 'Contact not found in this account.' },
         { status: 404 }
       );
+    const normalizedPhone = normalizeProspectPhone(contact.phone);
+    if (!normalizedPhone) return NextResponse.json({ error: 'Add an international phone number with country code to this CRM contact first.' }, { status: 400 });
     const result = await bridgeRequest(ctx.accountId, action, {
       ...select(body, ACTION_FIELDS),
-      contact: { ...contact, name: contact.name || contact.phone },
+      ...(action === 'execute_approved' ? { attested_by: ctx.userId } : {}),
+      contact: { ...contact, phone: normalizedPhone, name: contact.name || contact.phone },
     });
     if (
       Array.isArray(result.direct_messages) &&
@@ -174,12 +181,12 @@ export async function POST(request: Request) {
             void _contactId;
             return message as unknown as DirectMessage;
           });
-        if (messages.length)
+        for (let offset = 0; offset < messages.length; offset += 1000)
           result.inbox = await mirrorDirectMessages(ctx.supabase, {
             accountId: ctx.accountId,
             userId: ctx.userId,
             contactId: contact.id,
-            messages,
+            messages: messages.slice(offset, offset + 1000),
           });
       } catch {
         result.crm_warning =
@@ -199,6 +206,19 @@ export async function POST(request: Request) {
       if (noteError)
         result.crm_warning =
           'The concierge started, but the briefing note could not be saved. Do not repeat the action; inspect the timeline.';
+    }
+    if (['approve', 'execute_approved', 'sync'].includes(action) && result.workspace) {
+      try {
+        const copied = await reconcileConcierge(ctx, {
+          ...result,
+          direct_messages: Array.isArray(result.direct_messages) ? result.direct_messages.filter((m: Record<string,unknown>) => m.contact_id === contact.id) : [],
+          timeline: Array.isArray(result.timeline) ? result.timeline.filter((e: Record<string,unknown>) => e.pursuit_id === `wacrm:${contact.id}`) : [],
+        });
+        result.crm_reconciliation = copied;
+        if (copied.status === 'partial') result.crm_warning = 'The action completed. Some CRM records still need reconciliation; use Sync CRM records in Operations.';
+      } catch {
+        result.crm_warning = 'The action completed, but CRM reconciliation needs attention. Use Sync CRM records in Operations; do not repeat the action.';
+      }
     }
     return NextResponse.json(result);
   } catch (error) {

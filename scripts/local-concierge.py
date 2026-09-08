@@ -50,6 +50,7 @@ def main() -> None:
         'WACRM_BRIDGE_URL': f'http://127.0.0.1:{BRIDGE_PORT}',
         'WACRM_BRIDGE_TOKEN': secrets.token_urlsafe(48),
         'WACRM_BRIDGE_MODE': 'simulation',
+        'WACRM_WORKER_ENABLED': '1',
         'FLEET_HOME': str(local/'fleet'),
         'FLEET_PEOPLE_CRM': 'off',
         'FLEET_ESTATE_OUTCOMES': '0',

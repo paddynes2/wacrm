@@ -21,6 +21,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { bridgeRequest } from '@/lib/concierge/bridge';
+import { normalizeProspectPhone } from '@/lib/concierge/prospecting';
 
 import {
   sendTextMessage,
@@ -245,7 +246,7 @@ export async function sendMessageToConversation(
     }
     try {
       const result = await bridgeRequest(accountId, 'manual_draft', { contact: {
-        id: contact.id, phone: contact.phone, name: contact.name,
+        id: contact.id, phone: normalizeProspectPhone(contact.phone), name: contact.name || contact.phone,
         email: contact.email, company: contact.company,
       }, text: contentText, conversation_id: conversationId });
       const staged = result.result as { status?: string; decision?: { id?: string } } | undefined;

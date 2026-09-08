@@ -44,6 +44,8 @@ export interface TimelineEvent {
 }
 export interface PendingDecision {
   id: string;
+  digest?: string;
+  review?: {purpose?: string; text?: string; recipients?: unknown[]; summary?: string; start?: string; end?: string};
   stale?: boolean;
   pursuit_id?: string;
   headline?: string;
