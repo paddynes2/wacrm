@@ -129,3 +129,26 @@ def test_runtime_has_no_fleet_imports():
                 assert all(not n.name.startswith('fleet') for n in node.names),path
             if isinstance(node,ast.ImportFrom):
                 assert not (node.module or '').startswith('fleet'),path
+
+
+def test_worker_keeps_serving_other_accounts_after_one_provider_fails(setup):
+    import threading
+    engine, _ = setup
+    engine.command(ACCOUNT, {'command':'save_brief','brief':BRIEF})
+    engine.command(OTHER, {'command':'save_brief','brief':BRIEF})
+    processed = threading.Event()
+    def process(account):
+        if account == ACCOUNT:
+            raise RuntimeError('private-provider-error-must-not-be-logged')
+        processed.set()
+    engine.process_one = process
+    with TestClient(create_app(engine,TOKEN,worker=True)) as client:
+        assert processed.wait(3), 'First account failure starved a different tenant'
+        assert client.get('/health').json()['worker'] is True
+
+
+def test_polling_requires_explicit_bounded_interval(setup):
+    engine, _ = setup
+    for invalid in (-1,1,59,3601,True,60.0):
+        with pytest.raises(RuntimeError,match='polling interval'):
+            create_app(engine,TOKEN,sync_interval=invalid)
