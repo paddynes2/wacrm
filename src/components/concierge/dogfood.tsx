@@ -839,7 +839,13 @@ export function DogfoodWorkspace() {
             </button>
             <button
               className={`${button} ml-2`}
-              disabled={busy || !selected || !start || !end}
+              disabled={
+                busy ||
+                !selected ||
+                !start ||
+                !end ||
+                prospect?.calendar?.status !== 'proposed'
+              }
               onClick={() =>
                 void act('book', { ...selectedFields, start, end })
               }
@@ -1061,12 +1067,19 @@ export function DogfoodWorkspace() {
       {tab === 'Conversation' && prospect?.calendar && (
         <section className={panel}>
           <h3 className="font-semibold">
-            Available simulated slots · {prospect.calendar.status}
+            Proposed simulated slots · {prospect.calendar.status}
           </h3>
           <p className="text-sm">
             Select a returned slot to prepare its booking. New conversation
             evidence or expiration requires a fresh proposal.
           </p>
+          {prospect.calendar.status !== 'proposed' && (
+            <p className="text-sm">
+              Availability is incomplete. These times cannot be booked until the
+              missing calendar evidence is resolved; use the booking-link
+              fallback when appropriate.
+            </p>
+          )}
           {prospect.calendar.slots.map((slot) => (
             <button
               key={slot.start}
