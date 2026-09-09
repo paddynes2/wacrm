@@ -371,3 +371,17 @@ export async function dogfoodRequest(accountId: string, command?: ObjectValue) {
   if (!isObject(body)) throw new BridgeError('Invalid concierge response.');
   return body;
 }
+
+export function dogfoodApprovalEnabled(
+  mode: unknown,
+  readiness: Record<string, unknown> | undefined,
+  amendment = false
+): boolean {
+  return (
+    mode === 'simulation' ||
+    (mode === 'live' &&
+      readiness?.[
+        amendment ? 'live_amendments_enabled' : 'live_execution_enabled'
+      ] === true)
+  );
+}

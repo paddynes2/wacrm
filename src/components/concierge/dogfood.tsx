@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   calendarScenarioDraft,
+  dogfoodApprovalEnabled,
   type CalendarWindow,
   type CalendarBusy,
 } from '@/lib/concierge/dogfood';
@@ -209,6 +210,15 @@ export function DogfoodWorkspace() {
   }
   const prospect = report?.prospects.find((p) => p.id === selected);
   const simulation = report?.mode === 'simulation';
+  const approvalEnabled = dogfoodApprovalEnabled(
+    report?.mode,
+    report?.readiness
+  );
+  const amendmentEnabled = dogfoodApprovalEnabled(
+    report?.mode,
+    report?.readiness,
+    true
+  );
   const selectedFields = { prospect_id: selected };
   function hydrateCalendar(
     value: Report | null,
@@ -290,7 +300,7 @@ export function DogfoodWorkspace() {
         {report
           ? simulation
             ? 'Simulation: messages and calendar effects stay local. Fixture results are fictional; real research and model calls may incur configured costs.'
-            : 'Live workspace: review and prepare here. This screen does not execute external messages or calendar invitations.'
+            : 'Live workspace: review exact actions here. Execution requires an installed host authorization integration and its approval gate.'
           : 'Connecting to your workspace…'}
       </div>
       {error && (
@@ -1037,9 +1047,13 @@ export function DogfoodWorkspace() {
           )}
         </section>
       )}
-      {tab === 'Conversation' && simulation && prospect?.booking && (
+      {tab === 'Conversation' && prospect?.booking && (
         <section className={panel}>
-          <h3 className="font-semibold">Change the simulated booking</h3>
+          <h3 className="font-semibold">
+            {simulation
+              ? 'Change the simulated booking'
+              : 'Review a live booking change'}
+          </h3>
           <p className="text-sm">
             Record the agreed change in the supporting evidence field above. For
             rescheduling, enter the new start and end above. Review the exact
@@ -1061,6 +1075,7 @@ export function DogfoodWorkspace() {
             disabled={
               busy ||
               !evidence.trim() ||
+              !amendmentEnabled ||
               (amendmentOperation === 'reschedule' && (!start || !end))
             }
             onClick={() =>
@@ -1097,7 +1112,11 @@ export function DogfoodWorkspace() {
               </details>
               <button
                 className={button}
-                disabled={busy || prospect.amendment.status !== 'pending'}
+                disabled={
+                  busy ||
+                  !amendmentEnabled ||
+                  prospect.amendment.status !== 'pending'
+                }
                 onClick={() =>
                   void act('approve_amendment', {
                     ...selectedFields,
@@ -1105,7 +1124,11 @@ export function DogfoodWorkspace() {
                   })
                 }
               >
-                Approve change in simulation
+                {simulation
+                  ? 'Approve change in simulation'
+                  : amendmentEnabled
+                    ? 'Approve exact live booking change'
+                    : 'Live booking execution unavailable here'}
               </button>
             </div>
           )}
@@ -1227,12 +1250,14 @@ export function DogfoodWorkspace() {
                   <div className="flex gap-2">
                     <button
                       className={button}
-                      disabled={busy || !simulation}
+                      disabled={busy || !approvalEnabled}
                       onClick={() => void act('approve', { decision_id: d.id })}
                     >
                       {simulation
                         ? 'Approve in simulation'
-                        : 'Live execution unavailable here'}
+                        : approvalEnabled
+                          ? 'Approve exact live action'
+                          : 'Live execution unavailable here'}
                     </button>
                     <button
                       className={button}

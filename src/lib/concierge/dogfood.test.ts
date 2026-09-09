@@ -3,6 +3,7 @@ import {
   dogfoodRequest,
   validateDogfoodCommand,
   calendarScenarioDraft,
+  dogfoodApprovalEnabled,
 } from './dogfood';
 
 afterEach(() => {
@@ -250,5 +251,27 @@ describe('dogfood transport', () => {
     await expect(
       dogfoodRequest('11111111-1111-4111-8111-111111111111')
     ).rejects.toThrow('Provider unavailable');
+  });
+});
+
+describe('dogfood approval availability', () => {
+  it('requires the exact installed host capability in live mode', () => {
+    expect(dogfoodApprovalEnabled('simulation', {})).toBe(true);
+    expect(dogfoodApprovalEnabled('live', undefined)).toBe(false);
+    expect(
+      dogfoodApprovalEnabled('live', { live_execution_enabled: 'true' })
+    ).toBe(false);
+    expect(
+      dogfoodApprovalEnabled('live', { live_execution_enabled: true })
+    ).toBe(true);
+    expect(
+      dogfoodApprovalEnabled('live', { live_execution_enabled: true }, true)
+    ).toBe(false);
+    expect(
+      dogfoodApprovalEnabled('live', { live_amendments_enabled: true }, true)
+    ).toBe(true);
+    expect(
+      dogfoodApprovalEnabled(undefined, { live_execution_enabled: true })
+    ).toBe(false);
   });
 });
