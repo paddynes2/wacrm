@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ role: vi.fn(), bridge: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  role: vi.fn(),
+  bridge: vi.fn(),
+  reconcile: vi.fn(),
+}));
+vi.mock('@/lib/concierge/dogfood-reconcile', () => ({
+  reconcileDogfood: mocks.reconcile,
+}));
 vi.mock('@/lib/auth/account', () => ({
   requireRole: mocks.role,
   toErrorResponse: () =>
@@ -26,8 +33,23 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.role.mockResolvedValue({ accountId, userId: 'operator' });
   mocks.bridge.mockResolvedValue({ mode: 'simulation' });
+  mocks.reconcile.mockResolvedValue({ status: 'reconciled' });
 });
 describe('dogfood account boundary', () => {
+  it('projects completed actions and warns without repeating them when CRM fails', async () => {
+    mocks.reconcile.mockRejectedValueOnce(new Error('CRM unavailable'));
+    const response = await POST(request({ command: 'process' }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      crm_warning: expect.stringContaining('do not repeat'),
+    });
+    expect(mocks.bridge.mock.calls.filter((call) => call[1])).toHaveLength(1);
+  });
+  it('repairs CRM from a read-only backend report without redispatching effects', async () => {
+    expect((await POST(request({ command: 'reconcile' }))).status).toBe(200);
+    expect(mocks.bridge).toHaveBeenCalledExactlyOnceWith(accountId);
+    expect(mocks.reconcile).toHaveBeenCalledTimes(1);
+  });
   it('reads through verified viewer account without caching', async () => {
     const result = await GET();
     expect(result.status).toBe(200);
@@ -131,7 +153,7 @@ describe('dogfood account boundary', () => {
     ).toBe(200);
     expect(eq).toHaveBeenCalledWith('account_id', accountId);
     expect(eq).toHaveBeenCalledWith('phone_normalized', '27820000000');
-    expect(mocks.bridge).toHaveBeenLastCalledWith(accountId, {
+    expect(mocks.bridge).toHaveBeenCalledWith(accountId, {
       command: 'link_contact',
       prospect_id: 'p',
       contact: { ...contact, phone: '+27820000000', account_id: accountId },

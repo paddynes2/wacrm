@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
-import { requireRole, toErrorResponse } from '@/lib/auth/account';
+import {
+  requireRole,
+  toErrorResponse,
+  type AccountContext,
+} from '@/lib/auth/account';
+import { reconcileDogfood } from '@/lib/concierge/dogfood-reconcile';
 import { sameOrigin } from '@/lib/concierge/origin';
 import { BridgeError } from '@/lib/concierge/bridge';
 import {
@@ -20,6 +25,34 @@ function failure(error: unknown) {
   return error instanceof BridgeError
     ? NextResponse.json({ error: error.message }, { status: error.status })
     : toErrorResponse(error);
+}
+async function withCrmProjection(
+  ctx: AccountContext,
+  result: Record<string, unknown>
+) {
+  try {
+    const report =
+      Array.isArray(result.prospects) && Array.isArray(result.timeline)
+        ? result
+        : await dogfoodRequest(ctx.accountId);
+    const reconciliation = await reconcileDogfood(ctx, report);
+    return {
+      ...result,
+      crm_reconciliation: reconciliation,
+      ...(reconciliation.status === 'partial'
+        ? {
+            crm_warning:
+              'The action completed. Some CRM records need attention; use Reconcile CRM after checking contact links. Do not repeat the action.',
+          }
+        : {}),
+    };
+  } catch {
+    return {
+      ...result,
+      crm_warning:
+        'The action completed, but its CRM copy needs repair. Use Reconcile CRM; do not repeat the action.',
+    };
+  }
 }
 export async function GET() {
   try {
@@ -54,6 +87,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 });
     }
     const command = validateDogfoodCommand(body);
+    if (command.command === 'reconcile') {
+      const report = await dogfoodRequest(ctx.accountId);
+      return NextResponse.json({
+        ...report,
+        crm_reconciliation: await reconcileDogfood(ctx, report),
+      });
+    }
     if (command.command === 'promote') {
       const report = await dogfoodRequest(ctx.accountId);
       const prospect = Array.isArray(report.prospects)
@@ -130,34 +170,38 @@ export async function POST(request: Request) {
         .update(`dogfood-note:${ctx.accountId}:${contact.id}:${note}`)
         .digest('hex');
       const noteId = `${noteHash.slice(0, 8)}-${noteHash.slice(8, 12)}-5${noteHash.slice(13, 16)}-8${noteHash.slice(17, 20)}-${noteHash.slice(20, 32)}`;
-      const savedNote = await ctx.supabase
-        .from('contact_notes')
-        .insert({
-          id: noteId,
-          contact_id: contact.id,
-          account_id: ctx.accountId,
-          user_id: ctx.userId,
-          note_text: note,
-        });
+      const savedNote = await ctx.supabase.from('contact_notes').insert({
+        id: noteId,
+        contact_id: contact.id,
+        account_id: ctx.accountId,
+        user_id: ctx.userId,
+        note_text: note,
+      });
       if (savedNote.error && savedNote.error.code !== '23505')
         throw new BridgeError(
           'Contact saved, but its source note needs repair. Retry promotion; the existing contact will be preserved.',
           503
         );
       return NextResponse.json(
-        await dogfoodRequest(ctx.accountId, {
-          command: 'link_contact',
-          prospect_id: prospect.id,
-          contact: { ...contact, phone, account_id: ctx.accountId },
-          attested_by: ctx.userId,
-        })
+        await withCrmProjection(
+          ctx,
+          await dogfoodRequest(ctx.accountId, {
+            command: 'link_contact',
+            prospect_id: prospect.id,
+            contact: { ...contact, phone, account_id: ctx.accountId },
+            attested_by: ctx.userId,
+          })
+        )
       );
     }
     return NextResponse.json(
-      await dogfoodRequest(ctx.accountId, {
-        ...command,
-        attested_by: ctx.userId,
-      })
+      await withCrmProjection(
+        ctx,
+        await dogfoodRequest(ctx.accountId, {
+          ...command,
+          attested_by: ctx.userId,
+        })
+      )
     );
   } catch (error) {
     return failure(error);

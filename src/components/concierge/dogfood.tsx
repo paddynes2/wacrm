@@ -160,7 +160,11 @@ export function DogfoodWorkspace() {
           'The action completed, but the workspace could not refresh. Refresh before repeating it.'
         );
       }
-      setNotice('Workspace updated.');
+      setNotice(
+        typeof data.crm_warning === 'string'
+          ? data.crm_warning
+          : 'Workspace updated.'
+      );
       return true;
     } catch (e) {
       setError(
@@ -177,6 +181,20 @@ export function DogfoodWorkspace() {
   const prospect = report?.prospects.find((p) => p.id === selected);
   const simulation = report?.mode === 'simulation';
   const selectedFields = { prospect_id: selected };
+  function selectProspect(id: string) {
+    if (id === selected) return;
+    setSelected(id);
+    // A draft or permission belongs to its person; switching must not redirect it.
+    setReply('');
+    setEvidence('');
+    setReason('');
+    setStart('');
+    setEnd('');
+    setNote('');
+    setMinutes(0);
+    setUseful(true);
+    setPhone(report?.prospects.find((p) => p.id === id)?.phone || '');
+  }
   function exportPilot() {
     if (!report) return;
     const url = URL.createObjectURL(
@@ -270,6 +288,13 @@ export function DogfoodWorkspace() {
           </button>
           <button className={button} onClick={exportPilot}>
             Download pilot evidence
+          </button>
+          <button
+            className={button}
+            disabled={busy}
+            onClick={() => void act('reconcile')}
+          >
+            Reconcile CRM
           </button>
           {!simulation && (
             <button
@@ -480,8 +505,7 @@ export function DogfoodWorkspace() {
                 key={p.id}
                 className={`${panel} text-left ${selected === p.id ? 'ring-primary ring-2' : ''}`}
                 onClick={() => {
-                  setSelected(p.id);
-                  setPhone(p.phone || '');
+                  selectProspect(p.id);
                 }}
               >
                 <h3 className="font-semibold">{p.name}</h3>
@@ -596,7 +620,7 @@ export function DogfoodWorkspace() {
               <select
                 className={input}
                 value={selected}
-                onChange={(e) => setSelected(e.target.value)}
+                onChange={(e) => selectProspect(e.target.value)}
               >
                 <option value="">Choose a prospect</option>
                 {report?.prospects.map((p) => (
@@ -1005,7 +1029,7 @@ export function DogfoodWorkspace() {
             <select
               className={input}
               value={selected}
-              onChange={(e) => setSelected(e.target.value)}
+              onChange={(e) => selectProspect(e.target.value)}
             >
               <option value="">Choose a prospect</option>
               {report?.prospects.map((p) => (

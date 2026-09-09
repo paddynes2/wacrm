@@ -31,6 +31,7 @@ const commands: Record<string, string[]> = {
   retry_job: ['job_id'],
   new_pursuit: ['prospect_id'],
   sync: [],
+  reconcile: [],
   research: ['prospect_id'],
   research_phone: ['prospect_id'],
   prepare_amendment: ['prospect_id', 'operation', 'start', 'end', 'source_ref'],
