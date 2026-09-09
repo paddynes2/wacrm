@@ -65,7 +65,18 @@ def import_workspace(source, target, account):
         doc["brief_revision"] = 1
         # The bridge used a transport account as reducer ownership. The standalone
         # reducer uses the CRM tenant; retain originals below for lossless audit.
-        doc["observations"] = [{**event, "account_id": account} for event in snapshot["observations"]]
+        principals = {row["pursuit_id"]: row["identity"]["principal_id"] for row in snapshot["states"]}
+        def canonical_party(value, pursuit):
+            if value == principals[pursuit]:
+                return "principal:" + account
+            if re.fullmatch(r"[1-9][0-9]{7,14}@s\.whatsapp\.net", value):
+                return "+" + value.split("@")[0]
+            return value
+        doc["observations"] = [{**event, "account_id": account,
+            "data": {key: canonical_party(value, event["pursuit_id"]) if key in
+                     {"principal_id", "recipient_id", "party_id", "sender_id"} else value
+                     for key, value in event["data"].items()}}
+            for event in snapshot["observations"]]
         for pid in {event["pursuit_id"] for event in doc["observations"]}:
             state.scoped_view(doc["observations"], pid)
         for row in snapshot["states"]:

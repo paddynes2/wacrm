@@ -6,6 +6,12 @@ import { sendMessageToConversation } from '@/lib/whatsapp/send-message';
 
 beforeEach(() => { vi.stubEnv('WACRM_BRIDGE_URL', 'http://127.0.0.1:1'); bridge.mockReset(); bridge.mockResolvedValue({ result: { status: 'needs_approval', decision: { id: 'decision1' } } }); });
 afterEach(() => vi.unstubAllEnvs());
+it('standalone inbox directs human replies to Chris without calling the legacy bridge or Meta', async () => {
+  vi.stubEnv('WACRM_STANDALONE', '1');
+  vi.stubEnv('WACRM_BRIDGE_URL', '');
+  await expect(sendMessageToConversation(database().db, 'a', { conversationId: 'v', messageType: 'text', contentText: 'Hello' })).rejects.toMatchObject({ status: 409, message: 'Open Chris dogfood to take over this conversation and prepare a reply.' });
+  expect(bridge).not.toHaveBeenCalled();
+});
 function database(account = 'a', missing = false) {
   const filters: unknown[] = [];
   return { filters, db: { from(table: string) {

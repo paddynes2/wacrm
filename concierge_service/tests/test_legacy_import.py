@@ -57,3 +57,23 @@ def test_invalid_bot_path_and_live_mode_refused(tmp_path):
     row[A]['mode']='live'
     file.write_text(json.dumps(row))
     with pytest.raises(ValueError): inspect(source,A)
+
+
+def test_legacy_stop_still_suppresses_canonical_phone_in_new_pursuit(tmp_path):
+    from concierge_service.concierge_core import state
+    source = fixture(tmp_path)
+    ledger = source/'bots/b123456/runs.jsonl'
+    identified = json.loads(ledger.read_text())['observation']
+    stopped = {**identified,'event_id':'stop','kind':'opt_out',
+               'data':{'party_id':'27820000002@s.whatsapp.net'}}
+    with ledger.open('a') as stream:
+        stream.write(json.dumps({'kind':'concierge_event','observation':stopped})+'\n')
+    store_path = tmp_path/'new.sqlite3'
+    import_workspace(source,store_path,A)
+    store = Store(store_path)
+    with store.transaction() as db:
+        doc = store.load(db,A,'simulation')
+        current = {**doc['observations'][0], 'event_id':'new', 'pursuit_id':'new-pursuit'}
+        events = doc['observations'] + [current]
+        assert current['data']['recipient_id'] == '+27820000002'
+        assert state.scoped_view(events,'new-pursuit')['status'] == 'opted_out'

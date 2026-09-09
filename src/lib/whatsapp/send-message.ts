@@ -236,6 +236,9 @@ export async function sendMessageToConversation(
   }
 
   const contact = conversation.contact;
+  if (process.env.WACRM_STANDALONE === '1') {
+    throw new SendMessageError('bridge_error', 'Open Chris dogfood to take over this conversation and prepare a reply.', 409);
+  }
   if (process.env.WACRM_BRIDGE_URL?.trim()) {
     // Bridge accounts must never fall through to the independent Meta sender.
     if (!contact?.id || contact.account_id !== accountId) {
