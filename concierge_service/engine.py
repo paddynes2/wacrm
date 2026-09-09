@@ -12,6 +12,7 @@ from uuid import uuid4
 from .store import Store, account_id, encode
 from .concierge_core import state as core
 from .concierge_core import calendar as calendar_core
+from .concierge_core import amendment as amendment_core
 from . import providers
 
 MAX_ATTEMPTS = 3
@@ -141,7 +142,8 @@ class Engine:
         fields = {"save_brief": {"brief"}, "discover": {"source", "limit"},
                   "qualify": {"prospect_id", "verdict", "reason"}, "enrich": {"prospect_id", "phone", "source_ref"},
                   "start": {"prospect_id"}, "reply": {"prospect_id", "text", "message_id"},
-                  "retry_job": {"job_id"}, "new_pursuit": {"prospect_id"}, "process": set(), "approve": {"decision_id"}, "discard": {"decision_id"},
+                  "prepare_amendment": {"prospect_id", "operation", "start", "end", "source_ref"},
+                  "approve_amendment": {"prospect_id", "digest"}, "retry_job": {"job_id"}, "new_pursuit": {"prospect_id"}, "process": set(), "approve": {"decision_id"}, "discard": {"decision_id"},
                   "takeover": {"prospect_id"}, "resume": {"prospect_id"},
                   "consent": {"prospect_id", "party", "scope", "source_ref"},
                   "introduce": {"prospect_id"}, "propose": {"prospect_id", "start", "end", "timezone"},
@@ -266,6 +268,10 @@ class Engine:
                     self.propose(doc, p, body)
                 elif name == "book":
                     self.book(doc, p, body)
+                elif name == "prepare_amendment":
+                    self.prepare_amendment(doc, p, body)
+                elif name == "approve_amendment":
+                    self.approve_amendment(db, doc, p, body.get("digest"))
                 elif name == "review":
                     if type(body.get("useful")) is not bool:
                         raise ValueError("Usefulness must be true or false")
@@ -277,7 +283,7 @@ class Engine:
                         raise ValueError("Attendance requires a verified booking")
                     self.observe(doc, pid, "meeting_attended", {"event_id": state["booking_id"]}, source=text(body.get("source_ref"), "Attendance evidence", 500))
                 elif name == "followup":
-                    if state["status"] in {"unconfigured", "human_owned", "opted_out", "declined", "reconcile"} or state.get("latest_inbound"):
+                    if p.get("calendar_status") == "cancelled" or state["status"] in {"unconfigured", "human_owned", "opted_out", "declined", "reconcile"} or state.get("latest_inbound"):
                         raise ValueError("Follow-up requires an active unanswered approach")
                     receipts = [m for m in doc["messages"] if m["prospect_id"] == pid and m.get("purpose") == "approach"]
                     if not receipts:
@@ -535,6 +541,85 @@ class Engine:
                                               doc["brief"]["principal_name"] + " + " + p["name"])
         self.stage(doc, p, "booking", f"Meeting: {slot['start']} to {slot['end']}",
                    {"slot": slot, "request": request, "request_sha": digest(request["proposal"]), "valid_until": proposal["valid_until"]})
+
+    def amendment_context(self, doc, p):
+        if self.mode != "simulation":
+            raise ValueError("Calendar amendments are simulation only")
+        self.eligible(doc, p)
+        state = self.state(doc, p["id"])
+        if doc["paused"] or state["status"] in {"unconfigured", "human_owned", "opted_out", "declined", "reconcile", "attended"}:
+            raise ValueError("Conversation cannot amend a meeting in its current state")
+        if (not state.get("booking_id") or not p.get("booking")
+                or p["booking"].get("id") != state["booking_id"]
+                or p["booking"].get("status") != "confirmed"):
+            raise ValueError("A verified confirmed booking is required")
+        if state.get("reply_required") or not state.get("scheduling_agreed") or not state.get("booking_agreed"):
+            raise ValueError("Acknowledge replies and verify both parties' scheduling and booking agreement")
+        return state
+
+    def amendment_readers(self, doc, p, event=None):
+        booking = p["booking"] if event is None else event
+        account = "sim:" + doc["account_id"]
+        calendar = "sim-calendar:" + p["id"]
+        windows = tuple(calendar_core.WorkingWindow(d, wall_time(9), wall_time(17)) for d in range(5))
+        emails = [a["email"] for a in booking["attendees"]]
+        # Attendee identities are frozen in the verified booking, not supplied by the model.
+        zones = {"principal@simulation.invalid": doc["brief"]["timezone"],
+                 "recipient@simulation.invalid": p.get("calendar", {}).get("timezone", doc["brief"]["timezone"])}
+        people = [calendar_core.Participant(email, zones[email], windows) for email in emails]
+        bindings = {email: {"account_id": account, "calendar_ids": [calendar]} for email in emails}
+        def read_event(**kwargs):
+            return {"account_id": account, "calendar_id": calendar, "fetched_at": self.stamp(doc),
+                    "source_ref": "simulation:calendar-event-read", "event": json.loads(encode(booking))}
+        def read_busy(**kwargs):
+            return {"account_id": account, "fetched_at": self.stamp(doc), "source_ref": "simulation:calendar-busy-read",
+                    "payload": {"timeMin": kwargs["start"], "timeMax": kwargs["end"],
+                                "calendars": {calendar: {"busy": p.get("simulated_busy", [])}}}}
+        return account, calendar, people, bindings, read_event, read_busy
+
+    def prepare_amendment(self, doc, p, body):
+        state = self.amendment_context(doc, p)
+        source = text(body.get("source_ref"), "Amendment agreement evidence", 500)
+        operation = body.get("operation")
+        if operation == "cancel" and (body.get("start") is not None or body.get("end") is not None):
+            raise ValueError("Cancellation cannot select another time")
+        slot = {"start": body.get("start"), "end": body.get("end")} if operation == "reschedule" else None
+        account, calendar, people, bindings, read_event, read_busy = self.amendment_readers(doc, p)
+        proposal = amendment_core.prepare_amendment({**p["booking"], "account_id": account, "calendar_id": calendar},
+            operation, slot, participants=people, bindings=bindings, read_event=read_event, read_freebusy=read_busy,
+            now=lambda: datetime.fromtimestamp(self.now(doc), timezone.utc))
+        # The reviewed card binds the evidence and conversation as well as provider payload.
+        card = {"proposal": proposal, "revision": state["revision"], "brief_revision": doc["brief_revision"],
+                "source_ref": source, "account_id": doc["account_id"], "prospect_id": p["id"]}
+        p["amendment"] = {**card, "digest": digest(card), "status": "pending"}
+
+    def approve_amendment(self, db, doc, p, supplied_digest):
+        amendment = p.get("amendment")
+        if not amendment or amendment.get("status") != "pending":
+            raise ValueError("No pending amendment; an approved card cannot execute twice")
+        card = {k: v for k, v in amendment.items() if k not in {"digest", "status"}}
+        if (supplied_digest != amendment.get("digest") or digest(card) != supplied_digest
+                or card["account_id"] != doc["account_id"] or card["prospect_id"] != p["id"]):
+            raise ValueError("Amendment digest or ownership mismatch")
+        state = self.amendment_context(doc, p)
+        if card["revision"] != state["revision"] or card["brief_revision"] != doc["brief_revision"]:
+            raise ValueError("New evidence invalidated this amendment")
+        _, _, _, _, read_event, read_busy = self.amendment_readers(doc, p)
+        now = lambda: datetime.fromtimestamp(self.now(doc), timezone.utc)
+        proposal = card["proposal"]
+        amendment_core.recheck_amendment(proposal, read_event=read_event, read_freebusy=read_busy, now=now)
+        # A simulated provider result is verified through the same callback contract.
+        # Preserve event metadata; only the frozen approved fields may change.
+        candidate = {**p["booking"], **proposal["after"]}
+        _, _, _, _, read_after, _ = self.amendment_readers(doc, p, candidate)
+        if not amendment_core.verify_amendment(proposal, read_event=read_after, now=now):
+            raise ValueError("Calendar amendment read-back differs from approved request")
+        p["booking"] = candidate
+        p["calendar_status"] = "cancelled" if proposal["operation"] == "cancel" else "rescheduled"
+        amendment["status"] = "verified"
+        self.cancel(db, doc, p["id"])
+        self.event(doc, "calendar_amendment_verified", prospect_id=p["id"], operation=proposal["operation"],
+                   digest=supplied_digest, source_ref=card["source_ref"], simulated=True)
 
     def process_one(self, account):
         account = account_id(account)
