@@ -134,6 +134,37 @@ This adapter intentionally exposes no sending method. Live execution must use th
 product's separately reviewed dispatch path with frozen recipients, current state,
 authorization, suppression, exact membership checks and uncertain-effect reconciliation.
 
+## Inert reviewed transport boundary
+
+`reviewed_transport.execute_reviewed` implements the exact request/read-back boundary,
+but is not registered in the service or enabled by configuration. It requires all five
+host callbacks: `gate(canonical, send_fn)`, `validate_current(frozen)`,
+`inspect_thread(snapshot, frozen)`, `claim(digest, frozen)`, and
+`record(digest, frozen, status, evidence)`. Missing callbacks refuse before provider I/O.
+The latter four must explicitly return `True`; implicit `None` does not pass a gate.
+
+The host must enforce human authorization, kill/suppression/caps, current conversation
+revision and consent, complete recipient history, atomic single-use claims, and durable
+started/verified/unknown records. Hold the same dispatch lock used for inbound/takeover
+across final checks and execution. No callback default grants authority. The canonical
+action binds sender, recipients and the full product payload using the existing HR12
+allowlist. An optional OS-side integration must use `confirm_send.guarded_send`, not
+invent an alternative approval token or silently arm a permission flag. That integration
+is outside the standalone runtime; otherwise its ledger/redactor/CRM paths would
+reintroduce OS coupling.
+
+This boundary was checked against the actual canonical gate, its bound-key validation,
+replay lock and pre-send record, plus Fleet's WhatsApp request and read-back implementation.
+An authorized callback can issue at most one POST per callable, and durable claims must
+prevent cross-process replay. Read-back must confirm the exact chat members, message ID,
+direction and text. Provider timeouts, missing receipts and failed read-back remain
+uncertain; no automatic retry occurs. A verified provider message is still not evidence
+that the recipient received or read it. Tests terminate every POST in a fake HTTP client.
+
+Actual operation remains unavailable until the application wires these obligations to
+a reviewed authorization mechanism and its persistent ledger. Implementing this boundary
+does not itself authorize any live send.
+
 ## Source attribution
 
 This implementation adapts local OS provider contracts, not a third-party SDK copy.
