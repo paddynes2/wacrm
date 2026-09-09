@@ -50,6 +50,9 @@ def test_cancel_has_verified_receipt_and_duplicate_approval_has_no_effect(tmp_pa
     result = approve(engine, report)
     assert result["prospects"][0]["booking"]["status"] == "cancelled"
     assert result["prospects"][0]["calendar_status"] == "cancelled"
+    assert result["metrics"]["booked"] == 0
+    assert result["metrics"]["bookings_created"] == 1
+    assert result["metrics"]["bookings_cancelled"] == 1
     count = len(result["events"])
     with pytest.raises(ValueError, match="pending"):
         approve(engine, report)

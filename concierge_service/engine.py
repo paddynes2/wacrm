@@ -119,14 +119,16 @@ class Engine:
                      "remaining_setup": ["Fresh Wabi account registration and recovery", "Unipile account identity verification",
                                          "Controlled live delivery and calendar acceptance"]}
         return {"account_id": doc["account_id"], "mode": self.mode, "brief": doc["brief"],
-                "brief_revision": doc["brief_revision"], "prospects": ps, "messages": doc["messages"],
+                "brief_revision": doc["brief_revision"], "calendar_preferences": doc.get("calendar_preferences", {}), "prospects": ps, "messages": doc["messages"],
                 "decisions": doc["decisions"], "jobs": jobs, "timeline": doc["observations"], "events": doc["events"][-200:],
                 "paused": doc["paused"], "readiness": readiness,
                 "metrics": {"discovered": len(ps), "qualified": sum(p.get("qualification") == "qualified" for p in ps),
                             "reachable": sum(p.get("phone_status") == "operator_verified" for p in ps),
                             "approached": len({m["prospect_id"] for m in doc["messages"] if m.get("purpose") == "approach"}),
                             "introduced": sum(p["conversation"].get("introduced", False) for p in ps),
-                            "booked": sum(bool(p["conversation"].get("booking_id")) for p in ps),
+                            "booked": sum(bool(p["conversation"].get("booking_id")) and p.get("calendar_status") != "cancelled" for p in ps),
+                            "bookings_created": sum(bool(p["conversation"].get("booking_id")) for p in ps),
+                            "bookings_cancelled": sum(p.get("calendar_status") == "cancelled" for p in ps),
                             "attended": sum(p["conversation"].get("status") == "attended" for p in ps),
                             "useful_introductions": sum(r["useful"] for r in doc["reviews"]),
                             "customer_minutes": sum(r["minutes"] for r in doc["reviews"]),
@@ -139,7 +141,8 @@ class Engine:
         if not isinstance(body, dict):
             raise ValueError("Command object required")
         name = body.get("command")
-        fields = {"sync": set(), "research": {"prospect_id"}, "research_phone": {"prospect_id"}, "save_brief": {"brief"}, "discover": {"source", "limit"},
+        fields = {"calendar_preferences": {"prospect_id", "party", "timezone", "windows", "calendar_access", "simulated_busy", "source_ref"},
+                  "request_calendar_exception": {"prospect_id", "party", "start", "end", "source_ref"}, "booking_link": {"prospect_id"}, "sync": set(), "research": {"prospect_id"}, "research_phone": {"prospect_id"}, "save_brief": {"brief"}, "discover": {"source", "limit"},
                   "qualify": {"prospect_id", "verdict", "reason"}, "enrich": {"prospect_id", "phone", "source_ref"},
                   "start": {"prospect_id"}, "reply": {"prospect_id", "text", "message_id"},
                   "prepare_amendment": {"prospect_id", "operation", "start", "end", "source_ref"},
@@ -283,6 +286,15 @@ class Engine:
                     self.cancel(db, doc, pid)
                 elif name == "introduce":
                     self.stage(doc, p, "introduction", f"{doc['brief']['principal_name']}, meet {p['name']}. {p['fit']}")
+                elif name == "calendar_preferences":
+                    self.set_calendar_preferences(db, doc, p, body)
+                elif name == "request_calendar_exception":
+                    self.request_calendar_exception(doc, p, body)
+                elif name == "booking_link":
+                    link = doc["brief"].get("booking_link")
+                    if not link:
+                        raise ValueError("Configure the preferred booking link first")
+                    self.stage(doc, p, "booking_link", "Please choose a suitable time here: " + link)
                 elif name == "propose":
                     self.propose(doc, p, body)
                 elif name == "book":
@@ -521,17 +533,83 @@ class Engine:
         self.message(doc, p, decision["text"], "outbound", decision["purpose"])
         decision["status"] = "simulated"
 
-    def calendar_reader(self, doc, p, timezone_name=None):
-        tz = timezone_name or p.get("calendar", {}).get("timezone", doc["brief"]["timezone"])
+    def calendar_settings(self, doc, p, party, timezone_name=None):
+        saved = doc.get("calendar_preferences", {}) if party == "principal" else p.get("calendar_preferences", {})
+        defaults = {"timezone": timezone_name or (p.get("calendar", {}).get("timezone") if party == "recipient" else None) or doc["brief"]["timezone"],
+                    "windows": [{"weekday": day, "start": "09:00", "end": "17:00"} for day in range(5)],
+                    "calendar_access": self.mode == "simulation", "simulated_busy": [], "source_ref": "simulation:default-working-hours"}
+        return {**defaults, **saved}
+
+    def set_calendar_preferences(self, db, doc, p, body):
+        if self.mode != "simulation":
+            raise ValueError("Calendar access/busy scenario controls are simulation only")
+        party = body.get("party")
+        if party not in {"principal", "recipient"}:
+            raise ValueError("Choose principal or recipient calendar preferences")
+        tz = text(body.get("timezone"), "Timezone", 100)
+        calendar_core.zone(tz)
+        rows = body.get("windows")
+        if not isinstance(rows, list) or not 1 <= len(rows) <= 28:
+            raise ValueError("Explicit bounded working windows required")
+        for row in rows:
+            if not isinstance(row, dict) or set(row) != {"weekday", "start", "end"}:
+                raise ValueError("Invalid working window")
+            calendar_core.WorkingWindow(row["weekday"], wall_time.fromisoformat(row["start"]), wall_time.fromisoformat(row["end"]))
+        if type(body.get("calendar_access")) is not bool:
+            raise ValueError("Explicit simulated calendar access required")
+        busy = body.get("simulated_busy", [])
+        if not isinstance(busy, list) or len(busy) > 500:
+            raise ValueError("Bounded simulated busy intervals required")
+        for interval in busy:
+            if not isinstance(interval, dict) or set(interval) != {"start", "end"}:
+                raise ValueError("Invalid busy interval")
+            calendar_core.Interval(interval["start"], interval["end"])
+        settings = {"timezone": tz, "windows": json.loads(encode(rows)), "calendar_access": body["calendar_access"],
+                    "simulated_busy": json.loads(encode(busy)), "source_ref": text(body.get("source_ref"), "Calendar preferences evidence", 500)}
+        if party == "principal":
+            doc["calendar_preferences"] = settings
+            affected = doc["prospects"]
+            self.cancel(db, doc)
+        else:
+            p["calendar_preferences"] = settings
+            affected = [p]
+            self.cancel(db, doc, p["id"])
+        for prospect in affected:
+            prospect.pop("calendar", None)
+            if prospect.get("amendment", {}).get("status") == "pending":
+                prospect["amendment"]["status"] = "stale"
+
+    def request_calendar_exception(self, doc, p, body):
         state = self.state(doc, p["id"])
-        windows = tuple(calendar_core.WorkingWindow(d, wall_time(9), wall_time(17)) for d in range(5))
-        people = [calendar_core.Participant(state["identity"][party + "_id"], zone, windows)
-                  for party, zone in [("principal", doc["brief"]["timezone"]), ("recipient", tz)]]
-        bindings = {person.id: {"account_id": "sim:" + doc["account_id"], "calendar_ids": [person.id]} for person in people}
+        core.check_action(state, "schedule", state["revision"])
+        party = body.get("party")
+        if party not in {"principal", "recipient"}:
+            raise ValueError("Specify whose working hours require an exception")
+        interval = calendar_core.Interval(body.get("start"), body.get("end"))
+        if interval.start.timestamp() <= self.now(doc):
+            raise ValueError("Exception must concern a future interval")
+        proposal = {"party": party, "start": interval.start.isoformat(), "end": interval.end.isoformat(),
+                    "source_ref": text(body.get("source_ref"), "Exception request evidence", 500),
+                    "revision": state["revision"], "status": "needs_owner_agreement", "availability_verified": False}
+        p["calendar_exception"] = proposal
+        # Requesting an exception never widens working hours or authorizes booking.
+        self.event(doc, "calendar_exception_requested", prospect_id=p["id"], **proposal)
+
+    def calendar_reader(self, doc, p, timezone_name=None):
+        state = self.state(doc, p["id"])
+        people, bindings, busy_by_id = [], {}, {}
+        for party in ("principal", "recipient"):
+            settings = self.calendar_settings(doc, p, party, timezone_name if party == "recipient" else None)
+            windows = tuple(calendar_core.WorkingWindow(w["weekday"], wall_time.fromisoformat(w["start"]), wall_time.fromisoformat(w["end"])) for w in settings["windows"])
+            person = calendar_core.Participant(state["identity"][party + "_id"], settings["timezone"], windows)
+            people.append(person)
+            if settings["calendar_access"]:
+                bindings[person.id] = {"account_id": "sim:" + doc["account_id"], "calendar_ids": [person.id]}
+                busy_by_id[person.id] = settings["simulated_busy"] + p.get("simulated_busy", [])
         def read(**kwargs):
             return {"account_id": kwargs["account_id"], "fetched_at": self.stamp(doc),
                     "source_ref": "simulation:calendar-read", "payload": {"timeMin": kwargs["start"], "timeMax": kwargs["end"],
-                    "calendars": {cid: {"busy": p.get("simulated_busy", [])} for cid in kwargs["calendar_ids"]}}}
+                    "calendars": {cid: {"busy": busy_by_id[cid]} for cid in kwargs["calendar_ids"]}}}
         return people, bindings, read
 
     def propose(self, doc, p, body):
@@ -543,7 +621,11 @@ class Engine:
         tz = body.get("timezone", doc["brief"]["timezone"])
         people, bindings, read = self.calendar_reader(doc, p, tz)
         result = calendar_core.read_and_propose(body.get("start"), body.get("end"), people, bindings, read,
-                 now=lambda: datetime.fromtimestamp(self.now(doc), timezone.utc), limit=8)
+                 now=lambda: datetime.fromtimestamp(self.now(doc), timezone.utc), limit=8, booking_link=doc["brief"].get("booking_link") or None)
+        if result["status"] == "needs_exception":
+            p["calendar_exception"] = {"status": "needs_owner_agreement", "availability_verified": False,
+                                       "start": body.get("start"), "end": body.get("end"), "revision": state["revision"],
+                                       "reason": "No overlap within configured working hours and known availability"}
         p["calendar"] = {**result, "timezone": tz, "simulated": True,
                          "valid_until": self.now(doc) + 120, "revision": state["revision"]}
 
@@ -580,20 +662,24 @@ class Engine:
         booking = p["booking"] if event is None else event
         account = "sim:" + doc["account_id"]
         calendar = "sim-calendar:" + p["id"]
-        windows = tuple(calendar_core.WorkingWindow(d, wall_time(9), wall_time(17)) for d in range(5))
         emails = [a["email"] for a in booking["attendees"]]
-        # Attendee identities are frozen in the verified booking, not supplied by the model.
-        zones = {"principal@simulation.invalid": doc["brief"]["timezone"],
-                 "recipient@simulation.invalid": p.get("calendar", {}).get("timezone", doc["brief"]["timezone"])}
-        people = [calendar_core.Participant(email, zones[email], windows) for email in emails]
-        bindings = {email: {"account_id": account, "calendar_ids": [calendar]} for email in emails}
+        people, bindings, busy_rows = [], {}, []
+        roles = {"principal@simulation.invalid": "principal", "recipient@simulation.invalid": "recipient"}
+        for email in emails:
+            settings = self.calendar_settings(doc, p, roles[email])
+            windows = tuple(calendar_core.WorkingWindow(w["weekday"], wall_time.fromisoformat(w["start"]), wall_time.fromisoformat(w["end"])) for w in settings["windows"])
+            people.append(calendar_core.Participant(email, settings["timezone"], windows))
+            if settings["calendar_access"]:
+                bindings[email] = {"account_id": account, "calendar_ids": [calendar]}
+            busy_rows.extend(settings["simulated_busy"])
+        busy_rows.extend(p.get("simulated_busy", []))
         def read_event(**kwargs):
             return {"account_id": account, "calendar_id": calendar, "fetched_at": self.stamp(doc),
                     "source_ref": "simulation:calendar-event-read", "event": json.loads(encode(booking))}
         def read_busy(**kwargs):
             return {"account_id": account, "fetched_at": self.stamp(doc), "source_ref": "simulation:calendar-busy-read",
                     "payload": {"timeMin": kwargs["start"], "timeMax": kwargs["end"],
-                                "calendars": {calendar: {"busy": p.get("simulated_busy", [])}}}}
+                                "calendars": {calendar: {"busy": busy_rows}}}}
         return account, calendar, people, bindings, read_event, read_busy
 
     def prepare_amendment(self, doc, p, body):
