@@ -6,6 +6,45 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('dogfood commands', () => {
+  it('validates calendar scenario bounds without granting availability', () => {
+    const value = {
+      command: 'calendar_preferences',
+      prospect_id: 'p',
+      party: 'recipient',
+      timezone: 'Africa/Johannesburg',
+      windows: [{ weekday: 0, start: '09:00', end: '17:00' }],
+      calendar_access: false,
+      source_ref: 'Synthetic calendar scenario',
+    };
+    expect(validateDogfoodCommand(value)).toMatchObject({
+      calendar_access: false,
+    });
+    expect(() =>
+      validateDogfoodCommand({
+        ...value,
+        windows: [{ weekday: 7, start: '09:00', end: '17:00' }],
+      })
+    ).toThrow();
+    expect(() =>
+      validateDogfoodCommand({
+        ...value,
+        simulated_busy: [{ start: 'tomorrow', end: 'later' }],
+      })
+    ).toThrow();
+    expect(() =>
+      validateDogfoodCommand({ ...value, calendar_access: 'yes' })
+    ).toThrow();
+    expect(() =>
+      validateDogfoodCommand({
+        command: 'request_calendar_exception',
+        prospect_id: 'p',
+        party: 'other',
+        start: '2026-10-01T08:00:00Z',
+        end: '2026-10-01T09:00:00Z',
+        source_ref: 'evidence',
+      })
+    ).toThrow();
+  });
   it('binds booking amendments to reviewed digest and attributed change', () => {
     expect(
       validateDogfoodCommand({

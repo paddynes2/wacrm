@@ -24,6 +24,8 @@ type Prospect = {
   research?: Row;
   phone_research?: Row;
   candidate_phone?: string;
+  calendar_preferences?: Row;
+  calendar_exception?: Row;
 };
 type Brief = {
   principal_name: string;
@@ -103,6 +105,14 @@ export function DogfoodWorkspace() {
   const [useful, setUseful] = useState(true);
   const [hours, setHours] = useState(24);
   const [amendmentOperation, setAmendmentOperation] = useState('reschedule');
+  const [calendarTimezone, setCalendarTimezone] = useState(
+    'Africa/Johannesburg'
+  );
+  const [workingStart, setWorkingStart] = useState('09:00');
+  const [workingEnd, setWorkingEnd] = useState('17:00');
+  const [workingDays, setWorkingDays] = useState([0, 1, 2, 3, 4]);
+  const [calendarAccess, setCalendarAccess] = useState(true);
+  const [busyInterval, setBusyInterval] = useState(false);
   const initialized = useRef(false);
   const pending = useRef(false);
   const refresh = useCallback(async () => {
@@ -827,6 +837,141 @@ export function DogfoodWorkspace() {
             </button>
           </section>
         </div>
+      )}
+      {tab === 'Conversation' && simulation && prospect && (
+        <section className={panel}>
+          <h3 className="font-semibold">Calendar scenario</h3>
+          <p className="text-sm">
+            Use the Party and Supporting evidence fields above. Changes
+            invalidate previous proposals. Missing calendar access yields
+            tentative times; it never proves availability.
+          </p>
+          <label className="block text-sm">
+            Calendar timezone
+            <input
+              className={input}
+              value={calendarTimezone}
+              onChange={(e) => setCalendarTimezone(e.target.value)}
+            />
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {[
+              'Monday',
+              'Tuesday',
+              'Wednesday',
+              'Thursday',
+              'Friday',
+              'Saturday',
+              'Sunday',
+            ].map((label, day) => (
+              <label key={day} className="flex gap-1 text-sm">
+                <input
+                  type="checkbox"
+                  checked={workingDays.includes(day)}
+                  onChange={(e) =>
+                    setWorkingDays(
+                      e.target.checked
+                        ? [...workingDays, day].sort()
+                        : workingDays.filter((value) => value !== day)
+                    )
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-sm">
+              Working hours start
+              <input
+                className={input}
+                type="time"
+                value={workingStart}
+                onChange={(e) => setWorkingStart(e.target.value)}
+              />
+            </label>
+            <label className="text-sm">
+              Working hours end
+              <input
+                className={input}
+                type="time"
+                value={workingEnd}
+                onChange={(e) => setWorkingEnd(e.target.value)}
+              />
+            </label>
+          </div>
+          <label className="flex gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={calendarAccess}
+              onChange={(e) => setCalendarAccess(e.target.checked)}
+            />
+            Simulated calendar access available
+          </label>
+          <label className="flex gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={busyInterval}
+              onChange={(e) => setBusyInterval(e.target.checked)}
+            />
+            Mark the Start/End interval above as busy
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className={button}
+              disabled={
+                busy ||
+                !evidence.trim() ||
+                !workingDays.length ||
+                (busyInterval && (!start || !end))
+              }
+              onClick={() =>
+                void act('calendar_preferences', {
+                  ...selectedFields,
+                  party,
+                  timezone: calendarTimezone,
+                  windows: workingDays.map((weekday) => ({
+                    weekday,
+                    start: workingStart,
+                    end: workingEnd,
+                  })),
+                  calendar_access: calendarAccess,
+                  simulated_busy: busyInterval ? [{ start, end }] : [],
+                  source_ref: evidence,
+                })
+              }
+            >
+              Save calendar scenario
+            </button>
+            <button
+              className={button}
+              disabled={busy || !start || !end || !evidence.trim()}
+              onClick={() =>
+                void act('request_calendar_exception', {
+                  ...selectedFields,
+                  party,
+                  start,
+                  end,
+                  source_ref: evidence,
+                })
+              }
+            >
+              Request working-hours exception
+            </button>
+            <button
+              className={button}
+              disabled={busy || !brief.booking_link}
+              onClick={() => void act('booking_link', selectedFields)}
+            >
+              Prepare booking-link fallback
+            </button>
+          </div>
+          {prospect.calendar_exception && (
+            <p className="text-sm break-words">
+              Exception: {display(prospect.calendar_exception)}
+            </p>
+          )}
+        </section>
       )}
       {tab === 'Conversation' && simulation && prospect?.booking && (
         <section className={panel}>

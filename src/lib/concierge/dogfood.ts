@@ -34,6 +34,23 @@ const commands: Record<string, string[]> = {
   reconcile: [],
   research: ['prospect_id'],
   research_phone: ['prospect_id'],
+  calendar_preferences: [
+    'prospect_id',
+    'party',
+    'timezone',
+    'windows',
+    'calendar_access',
+    'simulated_busy',
+    'source_ref',
+  ],
+  request_calendar_exception: [
+    'prospect_id',
+    'party',
+    'start',
+    'end',
+    'source_ref',
+  ],
+  booking_link: ['prospect_id'],
   prepare_amendment: ['prospect_id', 'operation', 'start', 'end', 'source_ref'],
   approve_amendment: ['prospect_id', 'digest'],
 };
@@ -61,6 +78,12 @@ export function validateDogfoodCommand(value: unknown): ObjectValue {
     fail('Unexpected command fields.');
   for (const key of fields) {
     if (
+      value.command === 'calendar_preferences' &&
+      key === 'simulated_busy' &&
+      !(key in value)
+    )
+      continue;
+    if (
       value.command === 'prepare_amendment' &&
       value.operation === 'cancel' &&
       ['start', 'end'].includes(key)
@@ -79,6 +102,62 @@ export function validateDogfoodCommand(value: unknown): ObjectValue {
     !['reschedule', 'cancel'].includes(String(value.operation))
   )
     fail('Choose reschedule or cancel.');
+  if (
+    ['calendar_preferences', 'request_calendar_exception'].includes(
+      String(value.command)
+    ) &&
+    !['principal', 'recipient'].includes(String(value.party))
+  )
+    fail('Choose whose calendar is affected.');
+  if (value.command === 'calendar_preferences') {
+    if (!bounded(value.source_ref, 500))
+      fail('Provide calendar preference evidence (up to 500 characters).');
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: String(value.timezone) });
+    } catch {
+      fail('Invalid calendar timezone.');
+    }
+    if (
+      typeof value.calendar_access !== 'boolean' ||
+      !Array.isArray(value.windows) ||
+      value.windows.length < 1 ||
+      value.windows.length > 28
+    )
+      fail('Choose calendar access and working windows.');
+    for (const window of value.windows) {
+      if (
+        !isObject(window) ||
+        Object.keys(window).sort().join(',') !== 'end,start,weekday' ||
+        !Number.isInteger(window.weekday) ||
+        Number(window.weekday) < 0 ||
+        Number(window.weekday) > 6 ||
+        !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(window.start)) ||
+        !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(window.end)) ||
+        String(window.end) <= String(window.start)
+      )
+        fail('Working windows require valid days and increasing clock times.');
+    }
+    const busy = value.simulated_busy ?? [];
+    if (!Array.isArray(busy) || busy.length > 500)
+      fail('Invalid simulated busy intervals.');
+    for (const interval of busy) {
+      if (
+        !isObject(interval) ||
+        Object.keys(interval).sort().join(',') !== 'end,start'
+      )
+        fail('Invalid busy interval.');
+      for (const key of ['start', 'end'])
+        if (
+          !/(Z|[+-]\d{2}:\d{2})$/.test(String(interval[key])) ||
+          !Number.isFinite(Date.parse(String(interval[key])))
+        )
+          fail('Busy interval needs timezone offsets.');
+      if (
+        Date.parse(String(interval.end)) <= Date.parse(String(interval.start))
+      )
+        fail('Busy interval end must follow its start.');
+    }
+  }
   if (
     'digest' in value &&
     (typeof value.digest !== 'string' || !/^[a-f0-9]{64}$/.test(value.digest))
@@ -175,7 +254,9 @@ export function validateDogfoodCommand(value: unknown): ObjectValue {
   )
     fail('Invalid permission scope or party.');
   if (
-    ['propose', 'book'].includes(String(value.command)) ||
+    ['propose', 'book', 'request_calendar_exception'].includes(
+      String(value.command)
+    ) ||
     (value.command === 'prepare_amendment' && value.operation === 'reschedule')
   ) {
     for (const key of ['start', 'end'])
