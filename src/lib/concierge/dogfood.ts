@@ -31,6 +31,10 @@ const commands: Record<string, string[]> = {
   retry_job: ['job_id'],
   new_pursuit: ['prospect_id'],
   sync: [],
+  research: ['prospect_id'],
+  research_phone: ['prospect_id'],
+  prepare_amendment: ['prospect_id', 'operation', 'start', 'end', 'source_ref'],
+  approve_amendment: ['prospect_id', 'digest'],
 };
 function fail(message: string): never {
   throw new BridgeError(message, 400);
@@ -55,6 +59,12 @@ export function validateDogfoodCommand(value: unknown): ObjectValue {
   )
     fail('Unexpected command fields.');
   for (const key of fields) {
+    if (
+      value.command === 'prepare_amendment' &&
+      value.operation === 'cancel' &&
+      ['start', 'end'].includes(key)
+    )
+      continue;
     if (!(key in value)) fail(`Missing ${key}.`);
     if (
       ['prospect_id', 'decision_id', 'job_id'].includes(key) &&
@@ -63,6 +73,16 @@ export function validateDogfoodCommand(value: unknown): ObjectValue {
     )
       fail('Invalid record identifier.');
   }
+  if (
+    value.command === 'prepare_amendment' &&
+    !['reschedule', 'cancel'].includes(String(value.operation))
+  )
+    fail('Choose reschedule or cancel.');
+  if (
+    'digest' in value &&
+    (typeof value.digest !== 'string' || !/^[a-f0-9]{64}$/.test(value.digest))
+  )
+    fail('Invalid amendment digest.');
   if (value.command === 'save_brief') {
     const b = value.brief;
     const required = [
@@ -153,7 +173,10 @@ export function validateDogfoodCommand(value: unknown): ObjectValue {
       ))
   )
     fail('Invalid permission scope or party.');
-  if (['propose', 'book'].includes(String(value.command))) {
+  if (
+    ['propose', 'book'].includes(String(value.command)) ||
+    (value.command === 'prepare_amendment' && value.operation === 'reschedule')
+  ) {
     for (const key of ['start', 'end'])
       if (
         !bounded(value[key], 50) ||

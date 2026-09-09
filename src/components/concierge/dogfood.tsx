@@ -19,6 +19,11 @@ type Prospect = {
   brief_stale?: boolean;
   calendar?: { status: string; slots: { start: string; end: string }[] };
   conversation?: { status?: string };
+  booking?: Row;
+  amendment?: { status: string; digest: string; proposal: Row };
+  research?: Row;
+  phone_research?: Row;
+  candidate_phone?: string;
 };
 type Brief = {
   principal_name: string;
@@ -97,6 +102,7 @@ export function DogfoodWorkspace() {
   const [note, setNote] = useState('');
   const [useful, setUseful] = useState(true);
   const [hours, setHours] = useState(24);
+  const [amendmentOperation, setAmendmentOperation] = useState('reschedule');
   const initialized = useRef(false);
   const pending = useRef(false);
   const refresh = useCallback(async () => {
@@ -122,6 +128,17 @@ export function DogfoodWorkspace() {
   useEffect(() => {
     void refresh().catch((e) => setError(e.message));
   }, [refresh]);
+  const workPending = report?.jobs?.some((job) =>
+    ['queued', 'running'].includes(String(job.state))
+  );
+  useEffect(() => {
+    if (!workPending) return;
+    // Worker completion must become visible without requiring another operator action.
+    const timer = setInterval(() => {
+      if (!pending.current) void refresh().catch((e) => setError(e.message));
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [workPending, refresh]);
   async function act(command: string, fields: Row = {}) {
     if (pending.current) return false;
     pending.current = true;
@@ -279,6 +296,59 @@ export function DogfoodWorkspace() {
             Start a new pursuit for this brief
           </button>
         </div>
+      )}
+      {tab === 'Prospects' && prospect && (
+        <section className={panel}>
+          <h3 className="font-semibold">Research {prospect.name}</h3>
+          <p className="text-sm">
+            Provider calls use the approved brief and configured budget. A
+            suggested phone needs your identity/evidence review before it
+            becomes a contact route.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className={button}
+              disabled={busy}
+              onClick={() => void act('research', selectedFields)}
+            >
+              Research and assess fit
+            </button>
+            <button
+              className={button}
+              disabled={busy}
+              onClick={() => void act('research_phone', selectedFields)}
+            >
+              Research contact route
+            </button>
+            {prospect.candidate_phone && (
+              <button
+                className={button}
+                onClick={() => {
+                  setPhone(prospect.candidate_phone || '');
+                  setEvidence('');
+                }}
+              >
+                Review suggested phone: {prospect.candidate_phone}
+              </button>
+            )}
+          </div>
+          {prospect.research && (
+            <details>
+              <summary>Qualification evidence</summary>
+              <pre className="overflow-auto text-xs whitespace-pre-wrap">
+                {JSON.stringify(prospect.research, null, 2)}
+              </pre>
+            </details>
+          )}
+          {prospect.phone_research && (
+            <details>
+              <summary>Phone research evidence</summary>
+              <pre className="overflow-auto text-xs whitespace-pre-wrap">
+                {JSON.stringify(prospect.phone_research, null, 2)}
+              </pre>
+            </details>
+          )}
+        </section>
       )}
       {tab === 'Brief' && (
         <form
@@ -733,6 +803,65 @@ export function DogfoodWorkspace() {
             </button>
           </section>
         </div>
+      )}
+      {tab === 'Conversation' && simulation && prospect?.booking && (
+        <section className={panel}>
+          <h3 className="font-semibold">Change the simulated booking</h3>
+          <p className="text-sm">
+            Record the agreed change in the supporting evidence field above. For
+            rescheduling, enter the new start and end above. Review the exact
+            change before approval.
+          </p>
+          <label className="block text-sm">
+            Change
+            <select
+              className={input}
+              value={amendmentOperation}
+              onChange={(e) => setAmendmentOperation(e.target.value)}
+            >
+              <option value="reschedule">Reschedule</option>
+              <option value="cancel">Cancel</option>
+            </select>
+          </label>
+          <button
+            className={button}
+            disabled={
+              busy ||
+              !evidence.trim() ||
+              (amendmentOperation === 'reschedule' && (!start || !end))
+            }
+            onClick={() =>
+              void act('prepare_amendment', {
+                ...selectedFields,
+                operation: amendmentOperation,
+                source_ref: evidence,
+                ...(amendmentOperation === 'reschedule' ? { start, end } : {}),
+              })
+            }
+          >
+            Prepare booking change
+          </button>
+          {prospect.amendment && (
+            <div className="space-y-3 rounded-md border p-3">
+              <p className="text-sm">{prospect.amendment.status}</p>
+              <pre className="overflow-auto text-xs whitespace-pre-wrap">
+                {JSON.stringify(prospect.amendment.proposal, null, 2)}
+              </pre>
+              <button
+                className={button}
+                disabled={busy || prospect.amendment.status !== 'pending'}
+                onClick={() =>
+                  void act('approve_amendment', {
+                    ...selectedFields,
+                    digest: prospect.amendment?.digest,
+                  })
+                }
+              >
+                Approve change in simulation
+              </button>
+            </div>
+          )}
+        </section>
       )}
       {tab === 'Conversation' && prospect?.calendar && (
         <section className={panel}>

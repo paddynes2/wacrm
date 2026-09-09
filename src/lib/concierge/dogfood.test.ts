@@ -6,6 +6,38 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('dogfood commands', () => {
+  it('binds booking amendments to reviewed digest and attributed change', () => {
+    expect(
+      validateDogfoodCommand({
+        command: 'prepare_amendment',
+        prospect_id: 'p',
+        operation: 'cancel',
+        source_ref: 'attested cancellation',
+      })
+    ).toMatchObject({ operation: 'cancel' });
+    expect(() =>
+      validateDogfoodCommand({
+        command: 'prepare_amendment',
+        prospect_id: 'p',
+        operation: 'reschedule',
+        source_ref: 'agreement',
+      })
+    ).toThrow();
+    expect(() =>
+      validateDogfoodCommand({
+        command: 'approve_amendment',
+        prospect_id: 'p',
+        digest: 'spoof',
+      })
+    ).toThrow();
+    expect(
+      validateDogfoodCommand({
+        command: 'approve_amendment',
+        prospect_id: 'p',
+        digest: 'a'.repeat(64),
+      })
+    ).toMatchObject({ command: 'approve_amendment' });
+  });
   it('refuses browser-selected identity, transport and arbitrary commands', () => {
     for (const command of [
       { command: 'process', account_id: 'other' },
