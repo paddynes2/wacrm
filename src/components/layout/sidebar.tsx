@@ -81,6 +81,7 @@ import {
 interface NavItem {
   href: string;
   labelKey: string;
+  label?: string;
   icon: typeof LayoutDashboard;
   /**
    * When true, the nav row renders a small "Beta" chip after the label.
@@ -95,6 +96,7 @@ const navItems: NavItem[] = [
   { href: "/notifications", labelKey: "notifications", icon: Bell },
   { href: "/contacts", labelKey: "contacts", icon: Users },
   { href: "/concierge", labelKey: "concierge", icon: Bot },
+  { href: "/dogfood", labelKey: "concierge", label: "Chris dogfood", icon: Bot },
   { href: "/prospects", labelKey: "prospects", icon: UsersRound },
   { href: "/operations", labelKey: "operations", icon: Workflow },
   { href: "/connections", labelKey: "connections", icon: Settings },
@@ -240,7 +242,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     )}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span className="flex-1">{t(item.labelKey as string)}</span>
+                    <span className="flex-1">{item.label ?? t(item.labelKey as string)}</span>
                     {item.beta && (
                       <span
                         aria-label={t("beta")}
