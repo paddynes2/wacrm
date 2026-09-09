@@ -81,7 +81,8 @@ class GoogleCalendar:
                 "start": {"dateTime": proposal["start"]}, "end": {"dateTime": proposal["end"]},
                 "attendees": [{"email": email} for email in proposal["attendees"]]}
         plan = {"operation": "create", "account_id": self.account_id, "calendar_id": calendar_id,
-                "body": body, "request": deepcopy(request), "event_id": body["id"]}
+                "body": body, "request": deepcopy(request), "event_id": body["id"],
+                "method": "POST", "url": BASE + f"/calendars/{self.calendar(calendar_id)}/events?sendUpdates=all"}
         return {**plan, "digest": _digest(plan)}
 
     def prepare_amendment(self, proposal):
@@ -95,7 +96,8 @@ class GoogleCalendar:
         body = {"status": after["status"]} if proposal["operation"] == "cancel" else {
             "start": {"dateTime": after["start"]}, "end": {"dateTime": after["end"]}}
         plan = {"operation": proposal["operation"], **own, "body": body,
-                "etag": etag, "proposal": deepcopy(proposal)}
+                "etag": etag, "proposal": deepcopy(proposal), "method": "PATCH",
+                "url": BASE + f"/calendars/{self.calendar(own['calendar_id'])}/events/{quote(own['event_id'], safe='')}?sendUpdates=all"}
         return {**plan, "digest": _digest(plan)}
 
     def execute(self, plan, *, authorize, claim, complete, failed, preflight, mutation_guard):
@@ -123,6 +125,8 @@ class GoogleCalendar:
                         "attendees": [{"email": email} for email in proposal["attendees"]]}
             if checked != frozen["request"] or expected != frozen["body"]:
                 raise ValueError("Booking body differs from approved request")
+            if frozen.get("method") != "POST" or frozen.get("url") != BASE + f"/calendars/{cid}/events?sendUpdates=all":
+                raise ValueError("Booking endpoint differs from approved request")
         else:
             expected = self.prepare_amendment(frozen["proposal"])
             if expected != frozen:
