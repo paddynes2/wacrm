@@ -13,7 +13,7 @@ from .store import Store, account_id, encode
 from .concierge_core import state as core
 from .concierge_core import calendar as calendar_core
 from .concierge_core import amendment as amendment_core
-from . import providers
+from . import providers, research, enrichment
 
 MAX_ATTEMPTS = 3
 LEASE_SECONDS = 180
@@ -120,7 +120,7 @@ class Engine:
                                          "Controlled live delivery and calendar acceptance"]}
         return {"account_id": doc["account_id"], "mode": self.mode, "brief": doc["brief"],
                 "brief_revision": doc["brief_revision"], "prospects": ps, "messages": doc["messages"],
-                "decisions": doc["decisions"], "jobs": jobs, "events": doc["events"][-200:],
+                "decisions": doc["decisions"], "jobs": jobs, "timeline": doc["observations"], "events": doc["events"][-200:],
                 "paused": doc["paused"], "readiness": readiness,
                 "metrics": {"discovered": len(ps), "qualified": sum(p.get("qualification") == "qualified" for p in ps),
                             "reachable": sum(p.get("phone_status") == "operator_verified" for p in ps),
@@ -139,7 +139,7 @@ class Engine:
         if not isinstance(body, dict):
             raise ValueError("Command object required")
         name = body.get("command")
-        fields = {"save_brief": {"brief"}, "discover": {"source", "limit"},
+        fields = {"sync": set(), "research": {"prospect_id"}, "research_phone": {"prospect_id"}, "save_brief": {"brief"}, "discover": {"source", "limit"},
                   "qualify": {"prospect_id", "verdict", "reason"}, "enrich": {"prospect_id", "phone", "source_ref"},
                   "start": {"prospect_id"}, "reply": {"prospect_id", "text", "message_id"},
                   "prepare_amendment": {"prospect_id", "operation", "start", "end", "source_ref"},
@@ -153,6 +153,10 @@ class Engine:
                   "attended": {"prospect_id", "source_ref"}, "manual_reply": {"prospect_id", "text"}}
         if name not in fields or set(body) - fields[name] - {"command", "attested_by"}:
             raise ValueError("Unknown command or fields")
+        if name == "sync":
+            from .ingestion import sync_account
+            sync_account(self, account)
+            return self.report(account)
         if name == "process":
             self.process_one(account)
             return self.report(account)
@@ -162,7 +166,9 @@ class Engine:
                 result = client.verify_account()
                 with self.store.transaction() as db:
                     doc = self.store.load(db, account, self.mode)
-                    doc["connections"] = {"verified_at": self.stamp(doc), "account_id": client.account_id}
+                    if result.get("id") != client.account_id or result.get("identity_verified") is not True:
+                        raise ValueError("Provider account identity verification failed")
+                    doc["connections"].update(verified_at=self.stamp(doc), account_id=client.account_id)
                     self.event(doc, "connection_checked", verified=True)
                     self.store.save(db, doc)
             return self.report(account)
@@ -177,6 +183,10 @@ class Engine:
                 payload = json.loads(row["payload"])
                 if payload["brief_revision"] != doc["brief_revision"]:
                     raise ValueError("Changed brief requires new work")
+                if row["kind"] in {"research", "research_phone"}:
+                    p = self.prospect(doc, payload["prospect_id"])
+                    if digest(p) != payload["prospect_digest"]:
+                        raise ValueError("Research evidence changed; request fresh research")
                 if row["kind"] == "turn":
                     p = self.prospect(doc, payload["prospect_id"])
                     self.eligible(doc, p)
@@ -215,7 +225,16 @@ class Engine:
                 pid = body.get("prospect_id")
                 p = self.prospect(doc, pid)
                 state = self.state(doc, pid)
-                if name == "new_pursuit":
+                if name in {"research", "research_phone"}:
+                    if not doc["brief"] or doc["paused"] or p.get("archived"):
+                        raise ValueError("Research requires an active brief and candidate")
+                    if name == "research_phone" and p.get("qualification") != "qualified":
+                        raise ValueError("Qualify the candidate before spending on phone research")
+                    snapshot = digest(p)
+                    self.enqueue(db, doc, name, {"prospect_id": pid, "revision": state["revision"],
+                                 "brief_revision": doc["brief_revision"], "prospect_digest": snapshot},
+                                 name + ":" + pid + ":" + str(doc["brief_revision"]) + ":" + snapshot)
+                elif name == "new_pursuit":
                     self.cancel(db, doc, pid)
                     replacement = {k: v for k, v in p.items() if k not in {"calendar", "booking", "chat_id"}}
                     replacement.update(id=str(uuid4()), previous_pursuit=pid, qualification="pending", status="discovered", brief_stale=False)
@@ -639,13 +658,16 @@ class Engine:
             if payload["brief_revision"] != doc["brief_revision"]:
                 db.execute("UPDATE jobs SET state='cancelled' WHERE id=?", (job["id"],))
                 return
-            if job["kind"] == "turn":
+            if job["kind"] in {"turn", "research", "research_phone"}:
                 p = self.prospect(doc, payload["prospect_id"])
                 state = self.state(doc, p["id"])
                 if state["revision"] != payload["revision"]:
                     db.execute("UPDATE jobs SET state='cancelled' WHERE id=?", (job["id"],))
                     return
-                config = self.models.get(account, {"provider": "fixture"} if self.mode == "simulation" else {})
+                if job["kind"] in {"research", "research_phone"} and digest(p) != payload["prospect_digest"]:
+                    db.execute("UPDATE jobs SET state='cancelled' WHERE id=?", (job["id"],))
+                    return
+                config = (self.discovery if job["kind"] == "research_phone" else self.models).get(account, {"provider": "fixture"} if self.mode == "simulation" else {})
             else:
                 p = None
                 config = {"provider": "fixture"} if payload["source"] == "fixture" else self.discovery.get(account, {})
@@ -669,6 +691,8 @@ class Engine:
             messages = [m for m in doc["messages"] if p and m["prospect_id"] == p["id"]][-30:]
         try:
             result = (providers.discover(brief, payload["limit"], config) if job["kind"] == "discover"
+                      else research.assess(brief, p, config) if job["kind"] == "research"
+                      else enrichment.enrich(p, config) if job["kind"] == "research_phone"
                       else providers.generate(brief, p, messages, config))
             with self.store.transaction() as db:
                 doc = self.store.load(db, account, self.mode)
@@ -680,13 +704,49 @@ class Engine:
                 stale = (latest["state"] != "running" or latest["attempts"] != attempt or doc["brief_revision"] != payload["brief_revision"] or doc["paused"])
                 if p:
                     stale |= self.state(doc, p["id"])["revision"] != payload["revision"]
+                    if "prospect_digest" in payload:
+                        stale |= digest(self.prospect(doc, p["id"])) != payload["prospect_digest"]
                 if stale:
                     if latest["attempts"] == attempt:
                         db.execute("UPDATE jobs SET state='cancelled',lease_until=NULL WHERE id=?", (job["id"],))
                     self.event(doc, "stale_generation_discarded", job_id=job["id"])
+                elif job["kind"] in {"research", "research_phone"}:
+                    p = self.prospect(doc, p["id"])
+                    errors = result.get("errors", [])
+                    if not isinstance(errors, list) or any(not isinstance(error, str) for error in errors):
+                        raise ValueError("Malformed research errors")
+                    if job["kind"] == "research":
+                        p["research"] = {**result, "evidence": research.evidence_for(p), "brief_revision": doc["brief_revision"], "observed_at": self.stamp(doc)}
+                        verdict = result["verdict"]
+                        if verdict not in {"qualified", "rejected", "needs_review"}:
+                            raise ValueError("Unknown research verdict")
+                        p["qualification"] = verdict if verdict != "needs_review" else "pending"
+                        p["qualification_reason"] = result["rationale"]
+                        p["status"] = verdict
+                        p["qualified_brief_revision"] = doc["brief_revision"]
+                        if self.state(doc, p["id"])["status"] == "unconfigured":
+                            p["brief_stale"] = False
+                        if verdict == "rejected":
+                            self.cancel(db, doc, p["id"])
+                    else:
+                        p["phone_research"] = {**result, "observed_at": self.stamp(doc)}
+                        # Provider phone is a candidate route. Only the existing human
+                        # enrichment command can attest attribution and change identity.
+                        p["candidate_phone"] = result.get("phone")
+                        if p.get("phone_status") != "operator_verified":
+                            p["phone_status"] = result["phone_status"]
+                    self.event(doc, "research_completed", prospect_id=p["id"], kind_of_research=job["kind"], errors=errors)
+                    db.execute("UPDATE jobs SET state=?,lease_until=NULL,error=? WHERE id=?", ("needs_review" if errors else "completed", " | ".join(errors)[:1000] or None, job["id"]))
+                    if errors:
+                        doc["paused"] = True
+                        self.cancel(db, doc)
                 elif job["kind"] == "discover":
                     self.add_prospects(doc, result, payload)
-                    db.execute("UPDATE jobs SET state='completed',lease_until=NULL WHERE id=?", (job["id"],))
+                    errors = result.get("errors", [])
+                    db.execute("UPDATE jobs SET state=?,lease_until=NULL,error=? WHERE id=?", ("needs_review" if errors else "completed", " | ".join(errors)[:1000] or None, job["id"]))
+                    if errors:
+                        doc["paused"] = True
+                        self.cancel(db, doc)
                 else:
                     p = self.prospect(doc, p["id"])
                     intent = result.get("intent", "review")
@@ -713,6 +773,9 @@ class Engine:
                             "Provider or validation failed; inspect configuration/evidence. Reserved cost retained.", job["id"], attempt))
 
     def add_prospects(self, doc, result, payload):
+        errors = result.get("errors", [])
+        if not isinstance(errors, list) or any(not isinstance(error, str) for error in errors):
+            raise ValueError("Malformed discovery errors")
         rows = result.get("prospects")
         if not isinstance(rows, list) or len(rows) > payload["limit"]:
             raise ValueError("Discovery returned an invalid page")
@@ -720,7 +783,7 @@ class Engine:
             name = text(row.get("name"), "Name", 200)
             company = text(row.get("company"), "Company", 300, optional=True)
             source = text(row.get("source"), "Source", 1000)
-            profile = row.get("profile_url")
+            profile = row.get("profile_url") or None
             if profile is not None:
                 from urllib.parse import urlsplit
                 profile = text(profile, "Profile URL", 500)
@@ -731,10 +794,10 @@ class Engine:
             if any(p["identity_key"] == key for p in doc["prospects"]):
                 continue
             doc["prospects"].append({"id": str(uuid4()), "identity_key": key, "name": name, "company": company,
-                                     "role": text(row.get("role"), "Role", optional=True), "phone": None,
+                                     "role": text(row.get("role"), "Role", optional=True), "domain": text(row.get("domain"), "Domain", 253, optional=True), "phone": None,
                                      "source": source, "profile_url": profile,
                                      "fit": text(row.get("fit"), "Fit", 2000, optional=True) or "Research and qualification review required.",
                                      "status": "discovered", "qualification": "pending", "phone_status": "unresolved",
                                      "fixture": payload["source"] == "fixture", "brief_stale": False,
-                                     "created_at": self.stamp(doc)})
-        self.event(doc, "discovery_completed", provider=result.get("provider"), count=len(rows), simulated=payload["source"] == "fixture")
+                                     "discovery_errors": list(errors), "created_at": self.stamp(doc)})
+        self.event(doc, "discovery_completed", provider=result.get("provider"), count=len(rows), errors=errors, partial=bool(errors), simulated=payload["source"] == "fixture")
