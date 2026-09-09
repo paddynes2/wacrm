@@ -23,7 +23,7 @@ Limits must be integers 1 through 100. Fixture results are explicitly synthetic,
 
 Treg configuration requires `provider='treg'`, `token`, and `max_cost_usd`. Optional
 `filters` accepts only `q`, `company_domain`, `title`, `full_name`, `country`, `location`,
-and `keywords` as strings. Otherwise the audience becomes `q` and geography becomes
+as strings, and `keywords` as a list of 1..20 strings. Otherwise the audience becomes `q` and geography becomes
 `location`. The request goes to `https://treg.to/call/treg.people.search`; the per-call
 cap is sent in `X-Treg-Route-Max-Cost`. Settlement is recorded from the micro-dollar
 header or envelope. An over-cap charge remains visible and adds an error for the host
@@ -38,8 +38,18 @@ The implemented wire contract and row mapping were cross-checked against
 `OS/packages/treg-client/treg_client/__init__.py`, its recorded `search_pos.json`, and
 `OS/tools/lead-source/treg_adapter.py`. Those source fixture tests passed (43 tests across
 the transport and existing discovery adapters). This is local contract evidence, not a
-fresh live-provider result or current price guarantee. The historical $0.05-per-row
+fresh paid-provider result or current price guarantee. The historical $0.05-per-row
 comment is deliberately not used as a price promise.
+
+On 2026-09-09, unauthenticated GETs to the deployed
+[`/catalog/endpoints/treg.people.search`](https://treg.to/catalog/endpoints/treg.people.search)
+and [`/catalog/search?q=people%20search&limit=2`](https://treg.to/catalog/search?q=people%20search&limit=2)
+both returned HTTP 200 and still explicitly exposed this routed endpoint, its POST
+method, supported filters, envelope, and per-call cap header. This contradicts the
+general `/docs` prose saying no automatic routing. The more specific deployed catalogue
+corroborates the recorded response fixtures. It also specifies `keywords` as a list;
+this adapter preserves that shape instead of copying the old adapter's string coercion.
+Catalogue availability does not establish successful paid execution for this account.
 
 Icypeas extraction is not wired here: its existing adapter imports OS intake and learning
 paths. Its token pagination and `lastJobTitle`/`lastCompanyName` mapping were inspected,

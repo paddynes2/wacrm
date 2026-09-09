@@ -71,6 +71,19 @@ class ProvidersTest(unittest.TestCase):
                            "http": lambda *a: (200, {}, self.treg(rows=[row, row]))})
         self.assertEqual(len(result["prospects"]), 1)
 
+    def test_keywords_preserve_current_catalogue_list_contract(self):
+        calls = []
+        def fake(*args):
+            calls.append(args)
+            return 200, {}, self.treg()
+        config = {"provider": "treg", "token": "s", "max_cost_usd": 1, "http": fake,
+                  "filters": {"title": "Founder", "keywords": ["operations", "automation"]}}
+        discover({}, 1, config)
+        self.assertEqual(calls[0][3]["keywords"], ["operations", "automation"])
+        config["filters"]["keywords"] = "operations"
+        with self.assertRaises(ProviderError):
+            discover({}, 1, config)
+
     def test_fixture_conversation_stop_and_review(self):
         for text, intent in [("STOP!", "optout"), ("No thanks", "decline"), ("wrong person", "decline"),
                              ("yes", "interest"), ("schedule a meeting", "scheduling"), ("guarantee returns", "review")]:

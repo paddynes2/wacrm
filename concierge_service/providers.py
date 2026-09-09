@@ -115,7 +115,14 @@ def discover(brief: dict, limit: int, config: dict) -> dict:
     allowed = {"q", "company_domain", "title", "full_name", "country", "location", "keywords"}
     if not isinstance(filters, dict) or not filters or set(filters) - allowed:
         raise ProviderError("invalid discovery filters")
-    body = {key: _text(value, "discovery filter", 1000) for key, value in filters.items()}
+    body = {}
+    for key, value in filters.items():
+        if key == "keywords":
+            if not isinstance(value, list) or not 1 <= len(value) <= 20:
+                raise ProviderError("keywords require 1..20 strings")
+            body[key] = [_text(item, "keyword", 200) for item in value]
+        else:
+            body[key] = _text(value, "discovery filter", 1000)
     body["limit"] = limit
     headers, data = _request(config, "POST", base + "/call/treg.people.search", {
         "Content-Type": "application/json", "X-Treg-Token": token,
