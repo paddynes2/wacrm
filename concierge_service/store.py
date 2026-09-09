@@ -5,7 +5,7 @@ jobs lease work outside the transaction, then compare the conversation revision.
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 import json
 from pathlib import Path
 import sqlite3
@@ -27,7 +27,7 @@ class Store:
     def __init__(self, path):
         self.path = Path(path).resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.connect() as db:
+        with closing(self.connect()) as db:
             db.executescript("""
                 PRAGMA journal_mode=WAL;
                 CREATE TABLE IF NOT EXISTS workspaces (
@@ -77,5 +77,5 @@ class Store:
                    (value["account_id"], encode(value)))
 
     def accounts(self):
-        with self.connect() as db:
+        with closing(self.connect()) as db:
             return [row[0] for row in db.execute("SELECT account FROM workspaces")]

@@ -1,7 +1,7 @@
 """Account-scoped outbound orchestration over extracted, tested concierge rules."""
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, time as wall_time
 import hashlib
 import json
 import math
@@ -36,7 +36,7 @@ def number(value, name, maximum=10000):
 
 
 def digest(value):
-    return hashlib.sha256(encode(value).encode()).hexdigest()
+    return core._digest(value)
 
 
 class Engine:
@@ -141,7 +141,7 @@ class Engine:
         fields = {"save_brief": {"brief"}, "discover": {"source", "limit"},
                   "qualify": {"prospect_id", "verdict", "reason"}, "enrich": {"prospect_id", "phone", "source_ref"},
                   "start": {"prospect_id"}, "reply": {"prospect_id", "text", "message_id"},
-                  "process": set(), "approve": {"decision_id"}, "discard": {"decision_id"},
+                  "retry_job": {"job_id"}, "new_pursuit": {"prospect_id"}, "process": set(), "approve": {"decision_id"}, "discard": {"decision_id"},
                   "takeover": {"prospect_id"}, "resume": {"prospect_id"},
                   "consent": {"prospect_id", "party", "scope", "source_ref"},
                   "introduce": {"prospect_id"}, "propose": {"prospect_id", "start", "end", "timezone"},
@@ -168,6 +168,20 @@ class Engine:
             doc = self.store.load(db, account, self.mode)
             if name == "save_brief":
                 self.save_brief(db, doc, body.get("brief"))
+            elif name == "retry_job":
+                row = db.execute("SELECT * FROM jobs WHERE id=? AND account=?", (body.get("job_id"), account)).fetchone()
+                if not row or row["state"] not in {"failed", "cancelled"} or doc["paused"]:
+                    raise ValueError("Retry requires a failed/cancelled job and active workspace")
+                payload = json.loads(row["payload"])
+                if payload["brief_revision"] != doc["brief_revision"]:
+                    raise ValueError("Changed brief requires new work")
+                if row["kind"] == "turn":
+                    p = self.prospect(doc, payload["prospect_id"])
+                    self.eligible(doc, p)
+                    core.check_action(self.state(doc, p["id"]), payload["purpose"], payload["revision"])
+                # Attempt numbers never reset: a late worker cannot acquire a new attempt's authority.
+                replacement = {**payload, "retry_of": row["id"]}
+                self.enqueue(db, doc, row["kind"], replacement, "retry:" + row["id"])
             elif name in {"pause", "unpause"}:
                 doc["paused"] = name == "pause"
                 if doc["paused"]:
@@ -199,11 +213,20 @@ class Engine:
                 pid = body.get("prospect_id")
                 p = self.prospect(doc, pid)
                 state = self.state(doc, pid)
-                if name == "qualify":
+                if name == "new_pursuit":
+                    self.cancel(db, doc, pid)
+                    replacement = {k: v for k, v in p.items() if k not in {"calendar", "booking", "chat_id"}}
+                    replacement.update(id=str(uuid4()), previous_pursuit=pid, qualification="pending", status="discovered", brief_stale=False)
+                    doc["prospects"].append(replacement)
+                    p["archived"] = True
+                elif name == "qualify":
                     if body.get("verdict") not in {"qualified", "rejected"}:
                         raise ValueError("Qualification verdict required")
                     p["qualification"] = body["verdict"]
                     p["status"] = body["verdict"]
+                    p["qualified_brief_revision"] = doc["brief_revision"]
+                    if state["status"] == "unconfigured":
+                        p["brief_stale"] = False
                     p["qualification_reason"] = text(body.get("reason"), "Qualification reason")
                     if body["verdict"] == "rejected":
                         self.cancel(db, doc, pid)
@@ -216,7 +239,8 @@ class Engine:
                     p.update(phone=phone, phone_status="operator_verified", phone_source=text(body.get("source_ref"), "Phone evidence"))
                 elif name == "link_contact":
                     contact = body.get("contact")
-                    if not isinstance(contact, dict) or contact.get("phone") != p.get("phone"):
+                    if (not isinstance(contact, dict) or contact.get("account_id") != doc["account_id"]
+                            or contact.get("phone") != p.get("phone") or not p.get("phone")):
                         raise ValueError("CRM contact must match the verified prospect phone")
                     p["contact_id"] = account_id(contact.get("id"))
                 elif name == "start":
@@ -293,11 +317,14 @@ class Engine:
         for p in doc["prospects"]:
             p["brief_stale"] = True
 
+    def eligible(self, doc, p):
+        if p.get("qualification") != "qualified" or p.get("brief_stale") or p.get("archived"):
+            raise ValueError("Current qualification required; a changed configured brief needs a new pursuit")
+
     def start(self, db, doc, p, state):
         if doc["paused"] or not doc["brief"]:
             raise ValueError("Save a brief and resume the workspace first")
-        if p.get("qualification") != "qualified":
-            raise ValueError("Review and qualify the candidate first")
+        self.eligible(doc, p)
         if state["status"] == "unconfigured":
             if self.mode == "live" and p.get("phone_status") != "operator_verified":
                 raise ValueError("Live approach requires attributable phone evidence")
@@ -309,36 +336,110 @@ class Engine:
             if self.mode == "simulation":
                 self.observe(doc, p["id"], "consent", {"party_id": identity["recipient_id"], "scope": "contact", "proposal_id": p["id"]},
                              source="simulation:operator-started-test")
-        p["brief_stale"] = False
+        state = self.state(doc, p["id"])
+        if self.mode == "live" and [state["identity"]["recipient_id"], "contact"] not in state["consents"]:
+            return
+        if any(m["prospect_id"] == p["id"] and m.get("purpose") == "approach" and m["direction"] == "outbound" for m in doc["messages"]) and not state.get("reply_required"):
+            return
         self.queue_turn(db, doc, p, "reply" if self.state(doc, p["id"]).get("reply_required") else "approach")
 
     def queue_turn(self, db, doc, p, purpose, delay=0):
+        self.eligible(doc, p)
         state = self.state(doc, p["id"])
         core.check_action(state, purpose, state["revision"])
         self.enqueue(db, doc, "turn", {"prospect_id": p["id"], "revision": state["revision"],
                      "brief_revision": doc["brief_revision"], "purpose": purpose},
                      f"turn:{p['id']}:{state['revision']}:{doc['brief_revision']}:{purpose}", delay)
 
-    def inbound(self, db, doc, p, value, message_id=None):
+    def ingest(self, account, prospect_id, text, message_id, chat_id, sender_id, occurred_at, source_ref):
+        """Trusted provider-reader seam; never exposed as arbitrary observations."""
+        with self.store.transaction() as db:
+            doc = self.store.load(db, account, self.mode)
+            p = self.prospect(doc, prospect_id)
+            bound = self.state(doc, prospect_id)
+            canonical = ("+" + sender_id.removesuffix("@s.whatsapp.net")) if isinstance(sender_id, str) and sender_id.endswith("@s.whatsapp.net") else sender_id
+            if bound["status"] == "unconfigured" or canonical != bound["identity"]["recipient_id"] or not isinstance(chat_id, str) or not chat_id or (p.get("chat_id") and p["chat_id"] != chat_id):
+                raise ValueError("Provider conversation identity mismatch")
+            if text is None:
+                self.observe(doc, prospect_id, "takeover", {"reason": "[Media requires human review]"},
+                             event_id="media:" + digest([chat_id, message_id]), source=source_ref, occurred_at=occurred_at)
+                self.cancel(db, doc, prospect_id)
+                self.store.save(db, doc)
+                return self.present(doc, [])
+            self.inbound(db, doc, p, text, message_id, chat_id=chat_id, sender_id=sender_id,
+                         occurred_at=occurred_at, source_ref=source_ref)
+            self.store.save(db, doc)
+        return self.report(account)
+
+    def manual_outbound(self, account, prospect_id, text, message_id, chat_id, sender_id, occurred_at, source_ref):
+        """Provider-verified human outbound; pause independently of model inference."""
+        with self.store.transaction() as db:
+            doc = self.store.load(db, account, self.mode)
+            p = self.prospect(doc, prospect_id)
+            state = self.state(doc, prospect_id)
+            if state["status"] == "unconfigured" or not isinstance(chat_id, str) or not chat_id:
+                raise ValueError("Configured provider conversation required")
+            if p.get("chat_id") and p["chat_id"] != chat_id:
+                raise ValueError("Provider chat differs from bound conversation")
+            known = {e["data"]["provider_id"] for e in doc["observations"] if e["pursuit_id"] == prospect_id and e["kind"] == "dispatch_verified"}
+            if message_id in known:
+                return self.present(doc, [])
+            prior = next((m for m in doc["messages"] if m["id"] == message_id), None)
+            value = text if isinstance(text, str) and text.strip() else "[Media requires human review]"
+            if prior:
+                if prior["prospect_id"] != prospect_id or prior["text"] != value or prior["direction"] != "outbound" or prior.get("chat_id") != chat_id or prior.get("provider_timestamp") != occurred_at:
+                    raise ValueError("Provider message identity collision")
+                return self.present(doc, [])
+            self.observe(doc, prospect_id, "manual_outbound", {"message_id": message_id, "chat_id": chat_id},
+                         event_id="manual:" + digest([chat_id, message_id]), occurred_at=occurred_at, source=source_ref)
+            p["chat_id"] = chat_id
+            self.cancel(db, doc, prospect_id)
+            self.message(doc, p, value, "outbound", "manual", message_id)
+            doc["messages"][-1].update(chat_id=chat_id, provider_timestamp=occurred_at, source_ref=source_ref)
+            self.store.save(db, doc)
+        return self.report(account)
+
+    def inbound(self, db, doc, p, value, message_id=None, *, chat_id=None, sender_id=None, occurred_at=None, source_ref=None):
         state = self.state(doc, p["id"])
         if state["status"] == "unconfigured":
             raise ValueError("Start the conversation first")
+        value = text(value, "Reply")
+        sender = sender_id or state["identity"]["recipient_id"]
+        canonical_sender = ("+" + sender.removesuffix("@s.whatsapp.net")) if sender.endswith("@s.whatsapp.net") else sender
+        if canonical_sender != state["identity"]["recipient_id"]:
+            raise ValueError("Provider sender differs from bound recipient")
+        chat = text(chat_id or "chat:" + p["id"], "Chat ID", 200)
+        if p.get("chat_id") and p["chat_id"] != chat:
+            raise ValueError("Provider chat differs from bound conversation")
+        timestamp = occurred_at or self.stamp(doc)
+        calendar_core.aware_datetime(timestamp)
+        source = text(source_ref or "simulation:typed-reply", "Source", 500)
         mid = text(message_id, "Message ID", 150, optional=True) or str(uuid4())
         old = next((m for m in doc["messages"] if m["id"] == mid), None)
         if old:
-            if old["text"] != value or old["prospect_id"] != p["id"] or old["direction"] != "inbound":
+            if old["text"] != value or old["prospect_id"] != p["id"] or old["direction"] != "inbound" or old.get("chat_id") != chat or (occurred_at and old.get("provider_timestamp") != occurred_at):
                 raise ValueError("Message ID collision")
             return
+        p["chat_id"] = chat
         self.cancel(db, doc, p["id"])
-        self.observe(doc, p["id"], "inbound", {"message_id": mid, "chat_id": "chat:" + p["id"],
-                     "sender_id": state["identity"]["recipient_id"]}, event_id="inbound:" + mid)
+        # Keep raw provider time on the message. Equal-resolution deliveries still
+        # need distinct reducer instants so a second reply cannot disappear.
+        effective_timestamp = timestamp
+        matching = [e for e in doc["observations"] if e["pursuit_id"] == p["id"] and e["kind"] == "inbound"]
+        raw_matches = [m for m in doc["messages"] if m["prospect_id"] == p["id"] and m.get("provider_timestamp") == timestamp]
+        if raw_matches and matching:
+            latest = max(calendar_core.aware_datetime(e["occurred_at"]) for e in matching)
+            effective_timestamp = (max(latest, calendar_core.aware_datetime(timestamp)) + timedelta(microseconds=1)).isoformat()
+        self.observe(doc, p["id"], "inbound", {"message_id": mid, "chat_id": chat,
+                     "sender_id": state["identity"]["recipient_id"]}, event_id="inbound:" + digest([chat, mid]), occurred_at=effective_timestamp, source=source)
         self.message(doc, p, value, "inbound", "reply", mid)
+        doc["messages"][-1].update(chat_id=chat, provider_timestamp=timestamp, source_ref=source)
         normalized = re.sub(r"[.!\s]+$", "", value.strip().lower())
         if normalized in STOP_WORDS:
             self.observe(doc, p["id"], "opt_out", {"party_id": state["identity"]["recipient_id"]})
         elif normalized in {"no thanks", "not interested", "no thank you"}:
             self.observe(doc, p["id"], "declined", {"party_id": state["identity"]["recipient_id"]})
-        elif self.state(doc, p["id"])["status"] not in {"human_owned", "opted_out", "declined", "reconcile", "attended"}:
+        elif self.state(doc, p["id"]).get("reply_required") and not p.get("archived") and not p.get("brief_stale") and p.get("qualification") == "qualified" and self.state(doc, p["id"])["status"] not in {"human_owned", "opted_out", "declined", "reconcile", "attended"}:
             self.queue_turn(db, doc, p, "reply")
 
     def message(self, doc, p, value, direction, purpose, mid=None):
@@ -346,11 +447,12 @@ class Engine:
                                "text": value, "purpose": purpose, "simulated": self.mode == "simulation", "created_at": self.stamp(doc)})
 
     def stage(self, doc, p, purpose, value, extra=None):
+        self.eligible(doc, p)
         state = self.state(doc, p["id"])
         core.check_action(state, purpose, state["revision"])
         value = text(value, "Draft")
         payload = {"prospect_id": p["id"], "purpose": purpose, "text": value, "revision": state["revision"],
-                   "brief_revision": doc["brief_revision"], "account_id": doc["account_id"], "mode": self.mode, **(extra or {})}
+                   "brief_revision": doc["brief_revision"], "account_id": doc["account_id"], "mode": self.mode, "recipients": ([state["identity"]["principal_id"], state["identity"]["recipient_id"]] if purpose == "introduction" else [state["identity"]["recipient_id"]]), **(extra or {})}
         did = digest(payload)
         old = next((d for d in doc["decisions"] if d["id"] == did), None)
         if old:
@@ -364,43 +466,61 @@ class Engine:
             raise ValueError("Live sending is not authorized by simulation approval")
         if doc["paused"] or decision["brief_revision"] != doc["brief_revision"]:
             raise ValueError("Paused or changed brief invalidated this decision")
+        frozen = {k: v for k, v in decision.items() if k not in {"id", "status", "created_at"}}
+        if digest(frozen) != decision["id"] or decision["account_id"] != doc["account_id"] or decision["mode"] != self.mode:
+            raise ValueError("Decision payload digest or ownership mismatch")
         p = self.prospect(doc, decision["prospect_id"])
+        self.eligible(doc, p)
         state = self.state(doc, p["id"])
         core.check_action(state, decision["purpose"], decision["revision"])
+        expected = ([state["identity"]["principal_id"], state["identity"]["recipient_id"]] if decision["purpose"] == "introduction" else [state["identity"]["recipient_id"]])
+        if decision["recipients"] != expected:
+            raise ValueError("Simulated membership or recipient mismatch")
         action = {"action_id": decision["id"], "purpose": decision["purpose"]}
         if decision["purpose"] == "booking":
             if self.now(doc) > decision["valid_until"]:
                 raise ValueError("Calendar proposal expired; find times again")
+            people, bindings, read = self.calendar_reader(doc, p)
+            calendar_core.recheck_booking(decision["slot"], people, bindings, read, now=lambda: datetime.fromtimestamp(self.now(doc), timezone.utc))
+            request = decision["request"]
+            proposal = request["proposal"]
+            receipt = {"id": "sim:" + decision["id"], "status": "confirmed", "summary": proposal["summary"],
+                       "start": {"dateTime": proposal["start"]}, "end": {"dateTime": proposal["end"]},
+                       "attendees": [{"email": a} for a in proposal["attendees"]]}
+            if decision["request_sha"] != digest(proposal) or not calendar_core.verify_booking(request, receipt):
+                raise ValueError("Simulated booking read-back differs from proposal")
+            p["booking"] = receipt
         self.observe(doc, p["id"], "dispatch_started", {**action, "revision": decision["revision"]})
         self.observe(doc, p["id"], "dispatch_verified", {**action, "provider_id": "sim:" + decision["id"],
                      **({"request_sha": decision["request_sha"]} if decision["purpose"] == "booking" else {})}, source="simulation:verified-local-effect")
         self.message(doc, p, decision["text"], "outbound", decision["purpose"])
         decision["status"] = "simulated"
 
+    def calendar_reader(self, doc, p, timezone_name=None):
+        tz = timezone_name or p.get("calendar", {}).get("timezone", doc["brief"]["timezone"])
+        state = self.state(doc, p["id"])
+        windows = tuple(calendar_core.WorkingWindow(d, wall_time(9), wall_time(17)) for d in range(5))
+        people = [calendar_core.Participant(state["identity"][party + "_id"], zone, windows)
+                  for party, zone in [("principal", doc["brief"]["timezone"]), ("recipient", tz)]]
+        bindings = {person.id: {"account_id": "sim:" + doc["account_id"], "calendar_ids": [person.id]} for person in people}
+        def read(**kwargs):
+            return {"account_id": kwargs["account_id"], "fetched_at": self.stamp(doc),
+                    "source_ref": "simulation:calendar-read", "payload": {"timeMin": kwargs["start"], "timeMax": kwargs["end"],
+                    "calendars": {cid: {"busy": p.get("simulated_busy", [])} for cid in kwargs["calendar_ids"]}}}
+        return people, bindings, read
+
     def propose(self, doc, p, body):
         state = self.state(doc, p["id"])
+        self.eligible(doc, p)
         core.check_action(state, "schedule", state["revision"])
         if self.mode != "simulation":
             raise ValueError("Live calendar binding and read-back have not been configured")
-        start = calendar_core.aware_datetime(body.get("start"))
-        end = calendar_core.aware_datetime(body.get("end"))
-        if start.timestamp() <= self.now(doc) or end <= start or end - start > timedelta(days=30):
-            raise ValueError("Use a future search window of at most 30 days")
         tz = body.get("timezone", doc["brief"]["timezone"])
-        calendar_core.zone(tz)
-        slots = []
-        current = start.replace(second=0, microsecond=0)
-        for _ in range(min(int((end-start).total_seconds() // 1800), 1440)):
-            finish = current + timedelta(minutes=30)
-            locals_ = [current.astimezone(calendar_core.zone(z)) for z in [doc["brief"]["timezone"], tz]]
-            finishes = [finish.astimezone(calendar_core.zone(z)) for z in [doc["brief"]["timezone"], tz]]
-            if all(v.weekday() < 5 and v.hour >= 9 for v in locals_) and all(v.hour < 17 or (v.hour == 17 and v.minute == 0) for v in finishes):
-                slots.append({"start": current.isoformat(), "end": finish.isoformat(), "local": [v.isoformat() for v in locals_]})
-            current = finish
-            if len(slots) >= 8:
-                break
-        p["calendar"] = {"status": "proposed" if slots else "needs_exception", "slots": slots,
-                         "simulated": True, "valid_until": self.now(doc) + 120, "revision": state["revision"]}
+        people, bindings, read = self.calendar_reader(doc, p, tz)
+        result = calendar_core.read_and_propose(body.get("start"), body.get("end"), people, bindings, read,
+                 now=lambda: datetime.fromtimestamp(self.now(doc), timezone.utc), limit=8)
+        p["calendar"] = {**result, "timezone": tz, "simulated": True,
+                         "valid_until": self.now(doc) + 120, "revision": state["revision"]}
 
     def book(self, doc, p, body):
         proposal = p.get("calendar", {})
@@ -409,8 +529,12 @@ class Engine:
             raise ValueError("Select a fresh proposed slot")
         if self.state(doc, p["id"])["revision"] != proposal["revision"]:
             raise ValueError("New conversation evidence invalidated the calendar proposal")
+        people, bindings, read = self.calendar_reader(doc, p)
+        calendar_core.recheck_booking(slot, people, bindings, read, now=lambda: datetime.fromtimestamp(self.now(doc), timezone.utc))
+        request = calendar_core.stage_booking(slot, ["principal@simulation.invalid", "recipient@simulation.invalid"],
+                                              doc["brief"]["principal_name"] + " + " + p["name"])
         self.stage(doc, p, "booking", f"Meeting: {slot['start']} to {slot['end']}",
-                   {"slot": slot, "request_sha": digest(slot), "valid_until": proposal["valid_until"]})
+                   {"slot": slot, "request": request, "request_sha": digest(request["proposal"]), "valid_until": proposal["valid_until"]})
 
     def process_one(self, account):
         account = account_id(account)
@@ -500,7 +624,7 @@ class Engine:
         except Exception:
             with self.store.transaction() as db:
                 db.execute("UPDATE jobs SET state=?,due=?,lease_until=NULL,error=? WHERE id=? AND state='running' AND attempts=?",
-                           ("failed" if attempt >= MAX_ATTEMPTS else "queued", time.time() + min(60 * attempt, 180),
+                           ("failed" if attempt >= MAX_ATTEMPTS else "queued", self.now(doc) + min(60 * attempt, 180),
                             "Provider or validation failed; inspect configuration/evidence. Reserved cost retained.", job["id"], attempt))
 
     def add_prospects(self, doc, result, payload):
@@ -511,12 +635,19 @@ class Engine:
             name = text(row.get("name"), "Name", 200)
             company = text(row.get("company"), "Company", 300, optional=True)
             source = text(row.get("source"), "Source", 1000)
-            key = digest([row.get("profile_url") or name.casefold(), company.casefold()])
+            profile = row.get("profile_url")
+            if profile is not None:
+                from urllib.parse import urlsplit
+                profile = text(profile, "Profile URL", 500)
+                parsed = urlsplit(profile)
+                if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+                    raise ValueError("Profile URL must be public HTTP(S)")
+            key = digest([profile or name.casefold(), company.casefold()])
             if any(p["identity_key"] == key for p in doc["prospects"]):
                 continue
             doc["prospects"].append({"id": str(uuid4()), "identity_key": key, "name": name, "company": company,
                                      "role": text(row.get("role"), "Role", optional=True), "phone": None,
-                                     "source": source, "profile_url": row.get("profile_url"),
+                                     "source": source, "profile_url": profile,
                                      "fit": text(row.get("fit"), "Fit", 2000, optional=True) or "Research and qualification review required.",
                                      "status": "discovered", "qualification": "pending", "phone_status": "unresolved",
                                      "fixture": payload["source"] == "fixture", "brief_stale": False,
