@@ -9,13 +9,31 @@ const contact = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 const user = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
 function database(changedPhone?: string) {
   const calls: unknown[][] = [];
-  const chain = {
-    select: (...args: unknown[]) => { calls.push(['select', ...args]); return chain; },
-    eq: (...args: unknown[]) => { calls.push(['eq', ...args]); return chain; },
-    in: (...args: unknown[]) => { calls.push(['in', ...args]); return Promise.resolve({ error: null,
-      data: [{ id: contact, account_id: account, phone: changedPhone ?? '+27820000001' }] }); },
-  };
-  return { ctx: { supabase: { from: () => chain } as unknown as SupabaseClient, accountId: account, userId: user }, calls };
+  const notes = new Map<string, Record<string, unknown>>();
+  function from(table: string) {
+    let candidate: Record<string, unknown> | undefined;
+    let sought: string | undefined;
+    const chain = {
+      select: (...args: unknown[]) => { calls.push(['select', ...args]); return chain; },
+      eq: (...args: unknown[]) => { calls.push(['eq', ...args]); if (args[0] === 'id') sought = String(args[1]); return chain; },
+      in: (...args: unknown[]) => { calls.push(['in', ...args]); return chain; },
+      maybeSingle: () => chain,
+      upsert: (row: Record<string, unknown>) => { candidate = row; return chain; },
+      then: (resolve: (value: unknown) => unknown) => {
+        if (table === 'contacts') return Promise.resolve(resolve({ error: null,
+          data: [{ id: contact, account_id: account, phone: changedPhone ?? '+27820000001' }] }));
+        if (candidate) {
+          const id = String(candidate.id);
+          const exists = notes.has(id);
+          if (!exists) notes.set(id, candidate);
+          return Promise.resolve(resolve({ error: null, data: exists ? [] : [{ id }] }));
+        }
+        return Promise.resolve(resolve({ error: null, data: notes.get(String(sought)) }));
+      },
+    };
+    return chain;
+  }
+  return { ctx: { supabase: { from } as unknown as SupabaseClient, accountId: account, userId: user }, calls, notes };
 }
 function report() {
   return { account_id: account, mode: 'simulation',
@@ -82,5 +100,45 @@ describe('standalone CRM projection', () => {
     value.mode = 'live';
     await expect(reconcileDogfood(database().ctx, value)).rejects.toThrow();
     expect(reconcileConcierge).not.toHaveBeenCalled();
+  });
+  it('retains every verified amendment as an idempotent note independently of truncated activity', async () => {
+    const db = database();
+    const value = { ...report(), events: [], amendment_outcomes: [
+      { id: 'amend-1', kind: 'calendar_amendment_verified', prospect_id: 'p1', booking_id: 'booking-1',
+        operation: 'reschedule', digest: 'a'.repeat(64), source_ref: 'simulation:reviewed-change', created_at: '2020-01-02T00:00:00Z', simulated: true },
+      { id: 'amend-2', kind: 'calendar_amendment_verified', prospect_id: 'p1', booking_id: 'booking-1',
+        operation: 'cancel', digest: 'b'.repeat(64), source_ref: 'simulation:reviewed-cancel', created_at: '2020-01-03T00:00:00Z', simulated: true },
+    ] };
+    const first = await reconcileDogfood(db.ctx, value);
+    expect(first.amendment_notes_created).toBe(2);
+    const second = await reconcileDogfood(db.ctx, value);
+    expect(second.amendment_notes_created).toBe(0);
+    expect(second.amendment_notes_existing).toBe(2);
+    expect(db.notes.size).toBe(2);
+    const text = [...db.notes.values()].map(n => n.note_text).join('\n');
+    expect(text).toContain('[Simulation] Calendar reschedule verified');
+    expect(text).toContain('[Simulation] Calendar cancellation verified');
+    expect(text).toContain('booking-1');
+    expect(text).toContain('b'.repeat(64));
+  });
+  it('refuses amendment notes without original booking evidence or with inconsistent IDs', async () => {
+    const amendment = { id: 'amend', kind: 'calendar_amendment_verified', prospect_id: 'p1', booking_id: 'booking-1',
+      operation: 'cancel', digest: 'a'.repeat(64), source_ref: 'simulation:reviewed', created_at: '2020-01-02T00:00:00Z', simulated: true };
+    await expect(reconcileDogfood(database().ctx, { ...report(), timeline: [], amendment_outcomes: [amendment] })).rejects.toThrow();
+    await expect(reconcileDogfood(database().ctx, { ...report(), amendment_outcomes: [amendment, { ...amendment, digest: 'b'.repeat(64) }] })).rejects.toThrow();
+    await expect(reconcileDogfood(database().ctx, { ...report(), amendment_outcomes: [{ ...amendment, simulated: false }] })).rejects.toThrow();
+    expect(reconcileConcierge).not.toHaveBeenCalled();
+  });
+  it('preserves an edited amendment note and reports partial reconciliation', async () => {
+    const db = database();
+    const value = { ...report(), amendment_outcomes: [{ id: 'amend', kind: 'calendar_amendment_verified', prospect_id: 'p1', booking_id: 'booking-1',
+      operation: 'cancel', digest: 'a'.repeat(64), source_ref: 'simulation:reviewed', created_at: '2020-01-02T00:00:00Z', simulated: true }] };
+    await reconcileDogfood(db.ctx, value);
+    const note = [...db.notes.values()][0];
+    note.note_text = 'Human correction';
+    const result = await reconcileDogfood(db.ctx, value);
+    expect(result.status).toBe('partial');
+    expect(result.amendment_errors).toHaveLength(1);
+    expect(note.note_text).toBe('Human correction');
   });
 });
