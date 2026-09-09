@@ -99,11 +99,13 @@ exposes `treg.people.search` as a routed endpoint. The generic docs contradict t
 description; see [provider contract evidence](PROVIDER-CONTRACTS.md). No paid provider
 query was made. Catalogue existence does not demonstrate useful results for this audience.
 
-The inspected existing people-search adapters return identity/company/profile fields,
-not a verified phone-enrichment contract. The product therefore records missing phones
-and requires attributable enrichment evidence. A future phone provider must be evaluated
-on actual person-to-number attribution, freshness, coverage and cost; a formatted number
-or a provider's generic “verified” flag cannot stand in for that evaluation.
+The inspected existing people-search adapters return identity/company/profile fields.
+The new `enrichment.py` implements the separately verified public
+`treg.people.phone.find` catalogue contract with explicit identity and budget binding.
+Its outputs remain `provider_unverified`; no paid lookup was run during this build.
+Evaluate actual person-to-number attribution, freshness, coverage and cost in the pilot.
+A formatted number or a provider's generic “verified” flag cannot stand in for that
+evaluation, and missing/ambiguous numbers remain visibly unresolved.
 
 Calibrate on ten manually reviewed candidates, then consider five initial approaches
 and up to twenty total only within the authorized pilot. These are proposed learning

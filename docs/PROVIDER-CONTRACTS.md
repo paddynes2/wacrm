@@ -56,6 +56,35 @@ paths. Its token pagination and `lastJobTitle`/`lastCompanyName` mapping were in
 but no phone-enrichment contract was found in either inspected discovery adapter.
 Phone ownership and new Wabi/Unipile compatibility remain live acceptance questions.
 
+## Phone enrichment
+
+`concierge_service.enrichment.enrich(prospect, config)` returns `phone`, `source`,
+`evidence`, `phone_status`, `cost_usd`, `errors`. The host reserves budget before calling.
+Configuration requires `provider='treg'`, an explicit `token`, and `max_cost_usd`.
+The fixture provider returns a labelled synthetic miss, never a manufactured phone.
+
+An unauthenticated GET to the deployed
+[`treg.people.phone.find` catalogue entry](https://treg.to/catalog/endpoints/treg.people.phone.find)
+on 2026-09-09 returned HTTP 200. Its `routing.contract` explicitly declares POST,
+`linkedin_url` or `domain` plus `full_name` as supported identity variants, and an
+`output.phone` field containing a provider-formatted string or null for a miss.
+Optional output fields include `line_type` and `country_code`. The implementation sends
+the verified routed endpoint with the whole-call cap and strict-filters header.
+No paid call was made; tests use synthetic contract responses, not purported live hits.
+
+Each lookup binds a prospect ID, name and company plus a public LinkedIn person URL or
+company domain. Evidence records the exact request, requested identity digest, output,
+raw provider evidence, serving child and observation time. A returned E.164 number is
+`provider_unverified`; non-E.164 formats remain unresolved and no country is guessed.
+Do-not-call metadata suppresses the returned phone. Ignored identity filters similarly
+prevent presenting an eligible phone. Provider settlement remains recorded even when
+it exceeds the requested cap, and the host must pause further work on returned errors.
+
+The proxy's catalogue is the primary source for this normalized contract. Its child
+LeadMagic catalogue also exposes a recorded null-phone miss, but no positive phone hit
+was purchased or used as evidence here. Live coverage, correct ownership, WhatsApp
+reachability and permission to approach still require independent corroboration.
+
 ## Model generation
 
 `generate(brief, prospect, messages, config)` returns `text`, `intent`, `cost_usd`,
