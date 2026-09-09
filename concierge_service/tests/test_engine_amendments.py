@@ -134,3 +134,15 @@ def test_amendment_projection_preserves_history_beyond_event_display_limit(tmp_p
     assert len(report["events"]) == 200
     assert [e["operation"] for e in report["amendment_outcomes"]] == ["reschedule", "cancel"]
     assert len({e["id"] for e in report["amendment_outcomes"]}) == 2
+
+
+def test_replacement_pursuit_clears_outcome_state_and_cannot_repeat(tmp_path):
+    engine, _ = booked(tmp_path)
+    approve(engine, prepare(engine, "cancel"))
+    report = command(engine, "new_pursuit")
+    fresh = report["prospects"][-1]
+    assert fresh["qualification"] == "pending"
+    assert not set(fresh).intersection({"amendment", "calendar_status", "booking", "calendar_exception", "archived"})
+    assert report["metrics"]["bookings_cancelled"] == 1
+    with pytest.raises(ValueError, match="replacement"):
+        command(engine, "new_pursuit")

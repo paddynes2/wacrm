@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta, time as wall_time
+from contextlib import contextmanager
 import hashlib
 import json
 import math
@@ -41,7 +42,7 @@ def digest(value):
 
 
 class Engine:
-    def __init__(self, store: Store, *, mode="simulation", model_config=None, discovery_config=None, unipile=None):
+    def __init__(self, store: Store, *, mode="simulation", model_config=None, discovery_config=None, unipile=None, calendars=None):
         if mode not in {"simulation", "live"}:
             raise ValueError("Explicit simulation or live mode required")
         self.store, self.mode = store, mode
@@ -49,6 +50,7 @@ class Engine:
         self.models = model_config or {}
         self.discovery = discovery_config or {}
         self.unipile = unipile or {}
+        self.calendars = calendars or {}
 
     def now(self, doc):
         return time.time() + doc["clock_offset"]
@@ -113,6 +115,7 @@ class Engine:
                      "model": model.get("provider", "unconfigured"), "model_configured": bool(model),
                      "fixture_model": model.get("provider") == "fixture",
                      "unipile_configured": doc["account_id"] in self.unipile,
+                     "calendar_configured": doc["account_id"] in self.calendars,
                      "connection_verified": doc["connections"].get("verified_at"),
                      "live_delivery_verified": False, "live_execution_enabled": False,
                      "reason": "Live execution requires a separately authorized exact action. No live sends occur in this build.",
@@ -239,8 +242,10 @@ class Engine:
                                  "brief_revision": doc["brief_revision"], "prospect_digest": snapshot},
                                  name + ":" + pid + ":" + str(doc["brief_revision"]) + ":" + snapshot)
                 elif name == "new_pursuit":
+                    if p.get("archived"):
+                        raise ValueError("This pursuit already has a replacement; select the active pursuit")
                     self.cancel(db, doc, pid)
-                    replacement = {k: v for k, v in p.items() if k not in {"calendar", "booking", "chat_id"}}
+                    replacement = {k: v for k, v in p.items() if k not in {"calendar", "booking", "chat_id", "archived", "amendment", "calendar_status", "calendar_exception", "calendar_owner", "calendar_mutation_pending", "research", "qualification_reason", "qualified_brief_revision"}}
                     replacement.update(id=str(uuid4()), previous_pursuit=pid, qualification="pending", status="discovered", brief_stale=False)
                     doc["prospects"].append(replacement)
                     p["archived"] = True
@@ -307,6 +312,8 @@ class Engine:
                 elif name == "review":
                     if type(body.get("useful")) is not bool:
                         raise ValueError("Usefulness must be true or false")
+                    if body["useful"] and not state.get("introduced"):
+                        raise ValueError("A useful introduction review requires a verified introduction")
                     review = {"prospect_id": pid, "useful": body["useful"], "minutes": number(body.get("minutes"), "Minutes"),
                               "note": text(body.get("note"), "Review note", optional=True)}
                     doc["reviews"] = [r for r in doc["reviews"] if r["prospect_id"] != pid] + [review]
@@ -356,7 +363,7 @@ class Engine:
             p["brief_stale"] = True
 
     def eligible(self, doc, p):
-        if p.get("qualification") != "qualified" or p.get("brief_stale") or p.get("archived"):
+        if p.get("calendar_mutation_pending") or p.get("qualification") != "qualified" or p.get("brief_stale") or p.get("archived"):
             raise ValueError("Current qualification required; a changed configured brief needs a new pursuit")
 
     def start(self, db, doc, p, state):
@@ -598,6 +605,21 @@ class Engine:
 
     def calendar_reader(self, doc, p, timezone_name=None):
         state = self.state(doc, p["id"])
+        if self.mode == "live":
+            configured = self.calendars.get(doc["account_id"], {}).get("participants", {})
+            people, bindings = [], {}
+            for party in ("principal", "recipient"):
+                pid = state["identity"][party + "_id"]
+                item = configured.get(pid)
+                settings = item or self.calendar_settings(doc, p, party, timezone_name)
+                windows = tuple(calendar_core.WorkingWindow(w["weekday"], wall_time.fromisoformat(w["start"]), wall_time.fromisoformat(w["end"])) for w in settings["windows"])
+                people.append(calendar_core.Participant(pid, settings["timezone"], windows))
+                if item:
+                    bindings[pid] = {"account_id": item["client"].account_id, "calendar_ids": list(item["calendar_ids"])}
+            def live_read(**kwargs):
+                item = configured[kwargs["participant_id"]]
+                return item["client"].read_freebusy(**kwargs)
+            return people, bindings, live_read
         people, bindings, busy_by_id = [], {}, {}
         for party in ("principal", "recipient"):
             settings = self.calendar_settings(doc, p, party, timezone_name if party == "recipient" else None)
@@ -617,8 +639,6 @@ class Engine:
         state = self.state(doc, p["id"])
         self.eligible(doc, p)
         core.check_action(state, "schedule", state["revision"])
-        if self.mode != "simulation":
-            raise ValueError("Live calendar binding and read-back have not been configured")
         tz = body.get("timezone", doc["brief"]["timezone"])
         people, bindings, read = self.calendar_reader(doc, p, tz)
         result = calendar_core.read_and_propose(body.get("start"), body.get("end"), people, bindings, read,
@@ -627,7 +647,7 @@ class Engine:
             p["calendar_exception"] = {"status": "needs_owner_agreement", "availability_verified": False,
                                        "start": body.get("start"), "end": body.get("end"), "revision": state["revision"],
                                        "reason": "No overlap within configured working hours and known availability"}
-        p["calendar"] = {**result, "timezone": tz, "simulated": True,
+        p["calendar"] = {**result, "timezone": tz, "simulated": self.mode == "simulation",
                          "valid_until": self.now(doc) + 120, "revision": state["revision"]}
 
     def book(self, doc, p, body):
@@ -639,14 +659,104 @@ class Engine:
             raise ValueError("New conversation evidence invalidated the calendar proposal")
         people, bindings, read = self.calendar_reader(doc, p)
         calendar_core.recheck_booking(slot, people, bindings, read, now=lambda: datetime.fromtimestamp(self.now(doc), timezone.utc))
-        request = calendar_core.stage_booking(slot, ["principal@simulation.invalid", "recipient@simulation.invalid"],
-                                              doc["brief"]["principal_name"] + " + " + p["name"])
+        config = self.calendars.get(doc["account_id"], {}).get("participants", {})
+        state = self.state(doc, p["id"])
+        attendees = ([config[state["identity"][party + "_id"]]["email"] for party in ("principal", "recipient")]
+                     if self.mode == "live" else ["principal@simulation.invalid", "recipient@simulation.invalid"])
+        request = calendar_core.stage_booking(slot, attendees, doc["brief"]["principal_name"] + " + " + p["name"])
+        extra = {}
+        if self.mode == "live":
+            principal = config[state["identity"]["principal_id"]]
+            extra["calendar_plan"] = principal["client"].prepare_create(principal["calendar_ids"][0], request)
         self.stage(doc, p, "booking", f"Meeting: {slot['start']} to {slot['end']}",
-                   {"slot": slot, "request": request, "request_sha": digest(request["proposal"]), "valid_until": proposal["valid_until"]})
+                   {"slot": slot, "request": request, "request_sha": digest(request["proposal"]), "valid_until": proposal["valid_until"], **extra})
+
+    def execute_calendar(self, account, decision_id, *, authorize):
+        """Explicit host integration only; no default/public command authorizes writes."""
+        if self.mode != "live" or not callable(authorize):
+            raise ValueError("Live calendar execution requires an explicit authorization callback")
+        with self.store.transaction() as db:
+            doc = self.store.load(db, account, self.mode)
+            decision = next((d for d in doc["decisions"] if d["id"] == decision_id and d["status"] == "pending"), None)
+            if not decision or decision.get("purpose") != "booking" or not decision.get("calendar_plan"):
+                raise ValueError("Pending live booking decision required")
+            p = self.prospect(doc, decision["prospect_id"])
+            state = self.state(doc, p["id"])
+            principal = self.calendars[account]["participants"][state["identity"]["principal_id"]]
+            client = principal["client"]
+            frozen = json.loads(encode(decision))
+        guarded_db = []
+        @contextmanager
+        def transaction():
+            if guarded_db:
+                yield guarded_db[0]
+            else:
+                with self.store.transaction() as db:
+                    yield db
+        @contextmanager
+        def mutation_guard():
+            # Claim is already committed. Serialize final checks/effect/receipt
+            # against inbound and takeover transactions; rollback preserves claim.
+            with self.store.transaction() as db:
+                guarded_db.append(db)
+                try:
+                    yield
+                finally:
+                    guarded_db.clear()
+        claimed_revision = []
+        def preflight():
+            with transaction() as db:
+                doc = self.store.load(db, account, self.mode)
+                p = self.prospect(doc, frozen["prospect_id"])
+                self.eligible(doc, p)
+                state = self.state(doc, p["id"])
+                current = next(d for d in doc["decisions"] if d["id"] == decision_id)
+                if doc["paused"] or doc["brief_revision"] != frozen["brief_revision"] or digest({k: v for k, v in current.items() if k not in {"id", "status", "created_at"}}) != decision_id:
+                    raise ValueError("Calendar action or brief changed")
+                if claimed_revision:
+                    if state["revision"] != claimed_revision[0]:
+                        raise ValueError("New evidence cancelled claimed booking")
+                else:
+                    core.check_action(state, "booking", frozen["revision"])
+                if self.now(doc) > frozen["valid_until"]:
+                    raise ValueError("Booking proposal expired")
+                principal_now = self.calendars[account]["participants"][state["identity"]["principal_id"]]
+                if principal_now["client"] is not client or principal_now["calendar_ids"][0] != frozen["calendar_plan"]["calendar_id"]:
+                    raise ValueError("Calendar account binding changed")
+                people, bindings, read = self.calendar_reader(doc, p)
+                calendar_core.recheck_booking(frozen["slot"], people, bindings, read)
+        def claim(plan):
+            with transaction() as db:
+                doc = self.store.load(db, account, self.mode)
+                p = self.prospect(doc, frozen["prospect_id"])
+                state = self.state(doc, p["id"])
+                core.check_action(state, "booking", frozen["revision"])
+                self.observe(doc, p["id"], "dispatch_started", {"action_id": decision_id, "purpose": "booking", "revision": frozen["revision"]})
+                claimed_revision.append(self.state(doc, p["id"])["revision"])
+                self.store.save(db, doc)
+            return True
+        def complete(plan, result):
+            with transaction() as db:
+                doc = self.store.load(db, account, self.mode)
+                p = self.prospect(doc, frozen["prospect_id"])
+                self.observe(doc, p["id"], "dispatch_verified", {"action_id": decision_id, "purpose": "booking", "provider_id": result["id"], "request_sha": frozen["request_sha"]}, source=result["source_ref"])
+                p["booking"] = result["event"]
+                p["calendar_owner"] = {"account_id": result["account_id"], "calendar_id": result["calendar_id"]}
+                next(d for d in doc["decisions"] if d["id"] == decision_id)["status"] = "verified"
+                self.store.save(db, doc)
+        def failed(plan, status):
+            with transaction() as db:
+                doc = self.store.load(db, account, self.mode)
+                state = self.state(doc, frozen["prospect_id"])
+                if decision_id in state.get("unresolved", {}):
+                    self.observe(doc, frozen["prospect_id"], "dispatch_unknown" if status == "unknown" else "dispatch_not_sent", {"action_id": decision_id, "purpose": "booking"}, source="googlecalendar:execution-result")
+                    self.store.save(db, doc)
+        client.execute(frozen["calendar_plan"], authorize=authorize, claim=claim, complete=complete, failed=failed, preflight=preflight, mutation_guard=mutation_guard)
+        return self.report(account)
 
     def amendment_context(self, doc, p):
-        if self.mode != "simulation":
-            raise ValueError("Calendar amendments are simulation only")
+        if self.mode == "live" and doc["account_id"] not in self.calendars:
+            raise ValueError("Live calendar amendments require configured adapters; otherwise simulation only")
         self.eligible(doc, p)
         state = self.state(doc, p["id"])
         if doc["paused"] or state["status"] in {"unconfigured", "human_owned", "opted_out", "declined", "reconcile", "attended"}:
@@ -661,6 +771,25 @@ class Engine:
 
     def amendment_readers(self, doc, p, event=None):
         booking = p["booking"] if event is None else event
+        if self.mode == "live":
+            if event is not None:
+                raise ValueError("Live receipt cannot be replaced by caller data")
+            state = self.state(doc, p["id"])
+            configured = self.calendars[doc["account_id"]]["participants"]
+            owner = p["calendar_owner"]
+            principal = configured[state["identity"]["principal_id"]]
+            if principal["client"].account_id != owner["account_id"] or principal["calendar_ids"][0] != owner["calendar_id"]:
+                raise ValueError("Booking calendar ownership changed")
+            people, bindings, by_email = [], {}, {}
+            for party in ("principal", "recipient"):
+                item = configured[state["identity"][party + "_id"]]
+                windows = tuple(calendar_core.WorkingWindow(w["weekday"], wall_time.fromisoformat(w["start"]), wall_time.fromisoformat(w["end"])) for w in item["windows"])
+                people.append(calendar_core.Participant(item["email"], item["timezone"], windows))
+                bindings[item["email"]] = {"account_id": item["client"].account_id, "calendar_ids": item["calendar_ids"]}
+                by_email[item["email"]] = item["client"]
+            def read_busy(**kwargs):
+                return by_email[kwargs["participant_id"]].read_freebusy(**kwargs)
+            return owner["account_id"], owner["calendar_id"], people, bindings, principal["client"].read_event, read_busy
         account = "sim:" + doc["account_id"]
         calendar = "sim-calendar:" + p["id"]
         emails = [a["email"] for a in booking["attendees"]]
@@ -700,6 +829,8 @@ class Engine:
         p["amendment"] = {**card, "digest": digest(card), "status": "pending"}
 
     def approve_amendment(self, db, doc, p, supplied_digest):
+        if self.mode != "simulation":
+            raise ValueError("Live amendment requires explicit host execution authorization")
         amendment = p.get("amendment")
         if not amendment or amendment.get("status") != "pending":
             raise ValueError("No pending amendment; an approved card cannot execute twice")
@@ -726,6 +857,84 @@ class Engine:
         self.cancel(db, doc, p["id"])
         self.event(doc, "calendar_amendment_verified", prospect_id=p["id"], operation=proposal["operation"],
                    digest=supplied_digest, booking_id=candidate["id"], source_ref=card["source_ref"], simulated=True)
+
+    def execute_calendar_amendment(self, account, prospect_id, supplied_digest, *, authorize):
+        """Host-only durable mutation; no API command activates this authorization seam."""
+        if self.mode != "live" or not callable(authorize):
+            raise ValueError("Explicit live amendment authorization required")
+        with self.store.transaction() as db:
+            doc = self.store.load(db, account, self.mode)
+            p = self.prospect(doc, prospect_id)
+            state = self.amendment_context(doc, p)
+            card = p.get("amendment", {})
+            frozen = json.loads(encode(card))
+            if card.get("status") != "pending" or card.get("digest") != supplied_digest or digest({k: v for k, v in card.items() if k not in {"digest", "status"}}) != supplied_digest:
+                raise ValueError("Pending amendment digest mismatch")
+            client = self.calendars[account]["participants"][state["identity"]["principal_id"]]["client"]
+            plan = client.prepare_amendment(frozen["proposal"])
+        guarded_db = []
+        @contextmanager
+        def transaction():
+            if guarded_db:
+                yield guarded_db[0]
+            else:
+                with self.store.transaction() as db:
+                    yield db
+        @contextmanager
+        def mutation_guard():
+            # Claim is already committed. Serialize final checks/effect/receipt
+            # against inbound and takeover transactions; rollback preserves claim.
+            with self.store.transaction() as db:
+                guarded_db.append(db)
+                try:
+                    yield
+                finally:
+                    guarded_db.clear()
+        def preflight():
+            with transaction() as db:
+                doc = self.store.load(db, account, self.mode)
+                p = self.prospect(doc, prospect_id)
+                state = self.state(doc, prospect_id)
+                if (doc["paused"] or state["revision"] != frozen["revision"] or doc["brief_revision"] != frozen["brief_revision"]
+                        or p.get("amendment", {}).get("digest") != supplied_digest
+                        or p.get("calendar_mutation_pending") not in (None, supplied_digest)):
+                    raise ValueError("New evidence invalidated the amendment")
+                _, _, _, _, read_event, read_busy = self.amendment_readers(doc, p)
+                amendment_core.recheck_amendment(frozen["proposal"], read_event=read_event, read_freebusy=read_busy)
+        def claim(plan):
+            with transaction() as db:
+                doc = self.store.load(db, account, self.mode)
+                p = self.prospect(doc, prospect_id)
+                if p.get("calendar_mutation_pending") or p.get("amendment", {}).get("status") != "pending" or self.state(doc, prospect_id)["revision"] != frozen["revision"]:
+                    return False
+                p["calendar_mutation_pending"] = supplied_digest
+                p["amendment"]["status"] = "executing"
+                self.event(doc, "calendar_amendment_started", prospect_id=prospect_id, digest=supplied_digest)
+                self.store.save(db, doc)
+            return True
+        def complete(plan, receipt):
+            with transaction() as db:
+                doc = self.store.load(db, account, self.mode)
+                p = self.prospect(doc, prospect_id)
+                p["booking"] = receipt["event"]
+                p["calendar_status"] = "cancelled" if plan["operation"] == "cancel" else "rescheduled"
+                p["amendment"]["status"] = "verified"
+                p.pop("calendar_mutation_pending", None)
+                self.cancel(db, doc, prospect_id)
+                self.event(doc, "calendar_amendment_verified", prospect_id=prospect_id, booking_id=receipt["id"],
+                           operation=plan["operation"], digest=supplied_digest, source_ref=frozen["source_ref"], simulated=False)
+                self.store.save(db, doc)
+        def failed(plan, outcome):
+            with transaction() as db:
+                doc = self.store.load(db, account, self.mode)
+                p = self.prospect(doc, prospect_id)
+                p["amendment"]["status"] = "reconcile" if outcome == "unknown" else "not_sent"
+                if outcome == "not_sent":
+                    p.pop("calendar_mutation_pending", None)
+                self.event(doc, "calendar_amendment_uncertain", prospect_id=prospect_id, digest=supplied_digest, outcome=outcome)
+                self.store.save(db, doc)
+        client.execute(plan, authorize=authorize, claim=claim, complete=complete, failed=failed, preflight=preflight, mutation_guard=mutation_guard)
+        return self.report(account)
 
     def process_one(self, account):
         account = account_id(account)
