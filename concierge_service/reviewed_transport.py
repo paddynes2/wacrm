@@ -93,6 +93,9 @@ def execute_reviewed(client, action, *, gate=None, validate_current=None, inspec
         target_seen = not frozen.get("chat_id")
         for chat in client.list_chats():
             snapshot = client.fetch_conversation(chat["id"])
+            if (snapshot.get("account_id") != frozen["account_id"] or snapshot.get("chat_id") != chat["id"]
+                    or snapshot.get("all_history") is not True):
+                raise ProviderError("Provider history ownership or completeness changed")
             recipients = set(snapshot["recipients"])
             if recipients & set(frozen["recipients"]):
                 if inspect_thread(snapshot, copy()) is not True:
@@ -128,6 +131,9 @@ def execute_reviewed(client, action, *, gate=None, validate_current=None, inspec
             if frozen.get("chat_id") and cid != frozen["chat_id"]:
                 raise ProviderError("provider write receipt chat mismatch")
             snapshot = client.fetch_conversation(cid)
+            if (client.account_id != frozen["account_id"] or snapshot.get("account_id") != frozen["account_id"]
+                    or snapshot.get("chat_id") != cid or snapshot.get("all_history") is not True):
+                raise ProviderError("Provider read-back ownership or completeness changed")
             if set(snapshot["recipients"]) != set(frozen["recipients"]):
                 raise ProviderError("provider read-back membership mismatch")
             matches = [m for m in snapshot["messages"] if m["message_id"] == mid]

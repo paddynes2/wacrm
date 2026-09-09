@@ -152,3 +152,34 @@ def test_polling_requires_explicit_bounded_interval(setup):
     for invalid in (-1,1,59,3601,True,60.0):
         with pytest.raises(RuntimeError,match='polling interval'):
             create_app(engine,TOKEN,sync_interval=invalid)
+
+
+def test_live_api_requires_installed_authorizer_and_exact_ledger_decision():
+    from concierge_service.tests.test_live_execution import LiveExecutionTest
+    from concierge_service.live_execution import execute_decision
+    case = LiveExecutionTest('test_verified_dispatch_persists_provider_receipt_and_cannot_repeat')
+    case.setUp()
+    try:
+        from concierge_service.tests.test_engine_safety import A
+        url = f'/workspace/{A}/dogfood'
+        headers = {'Authorization':'Bearer '+TOKEN}
+        disabled = TestClient(create_app(case.engine,TOKEN),headers=headers)
+        assert disabled.post(url,json={'command':'approve','decision_id':case.decision}).status_code == 409
+        assert not case.client.writes
+        waiting = lambda runtime, account, did: execute_decision(runtime,account,did,lambda action,invoke: False)
+        configured = TestClient(create_app(case.engine,TOKEN,live_executor=waiting),headers=headers)
+        assert configured.get(url).json()['readiness']['live_execution_enabled'] is True
+        assert configured.post(url,json={'command':'approve','decision_id':case.decision}).status_code == 200
+        assert not case.client.writes, 'Installing authorization must not grant an action'
+        approved = lambda runtime, account, did: execute_decision(runtime,account,did,case.gate)
+        client = TestClient(create_app(case.engine,TOKEN,live_executor=approved),headers=headers)
+        assert client.post(url,json={'command':'approve','decision_id':case.decision,'text':'tamper'}).status_code == 409
+        assert not case.client.writes
+        report = client.post(url,json={'command':'approve','decision_id':case.decision}).json()
+        assert report['decisions'][-1]['status'] == 'executed'
+        assert report['readiness']['live_delivery_verified'] is False
+        assert len(case.client.writes) == 1  # Fake HTTP only; never a real provider call.
+        assert client.post(url,json={'command':'approve','decision_id':case.decision}).status_code == 409
+        assert len(case.client.writes) == 1
+    finally:
+        case.doCleanups()

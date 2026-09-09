@@ -23,7 +23,8 @@ class Client:
         return [{"id": "chat"}]
 
     def fetch_conversation(self, cid):
-        return {"recipients": self.recipients, "messages": ([{"message_id": "sent", "is_sender": True,
+        return {"account_id": self.account_id, "chat_id": cid, "all_history": True,
+            "recipients": self.recipients, "messages": ([{"message_id": "sent", "is_sender": True,
             "text": "wrong" if self.bad_readback else "Hello", "timestamp": "2020-01-01T00:00:00Z"}] if self.writes else [])}
 
     def http(self, method, url, headers, body):
@@ -111,6 +112,19 @@ class ReviewedTransportTest(unittest.TestCase):
             execute_reviewed(self.client, self.action, **self.callbacks)
         self.assertEqual(len(self.client.writes), 1)
         self.assertEqual(self.records[-1][0], "unknown")
+
+    def test_readback_cannot_change_account_or_chat_after_write(self):
+        original = self.client.fetch_conversation
+        def changed(cid):
+            snapshot = original(cid)
+            if self.client.writes:
+                snapshot['account_id'] = 'another-account'
+            return snapshot
+        self.client.fetch_conversation = changed
+        with self.assertRaises(UncertainDelivery):
+            execute_reviewed(self.client,self.action,**self.callbacks)
+        self.assertEqual(self.records[-1][0], 'unknown')
+        self.assertNotIn('verified', [record[0] for record in self.records])
 
     def test_gate_cannot_call_same_callable_twice(self):
         def twice(action, send):

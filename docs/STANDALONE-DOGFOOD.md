@@ -13,9 +13,10 @@ Do not reset or reseed it. The launcher refuses occupied ports and remote databa
 ```powershell
 cd C:/wacrm-dogfood
 npm ci
-python -m pip install -r concierge_service/requirements.txt
+python -m venv .local/venv
+.local/venv/Scripts/python.exe -m pip install -r concierge_service/requirements-dev.txt
 npx supabase start
-python scripts/local-dogfood.py
+.local/venv/Scripts/python.exe scripts/local-dogfood.py
 ```
 
 Open http://127.0.0.1:8316/dogfood. Existing local accounts still work. The launcher
@@ -115,6 +116,33 @@ or guessed pricing is claimed.
 
 ## Wabi and Unipile live acceptance
 
+The optional [host composition](../concierge_service/host.py) connects reviewed API
+actions to the product-owned live executors. `create_authorized_app` takes an
+explicit live `Engine`, private token, a WhatsApp gate, a calendar authorizer and
+verified principal provider identities. Gates are absent by default. There is no
+environment flag that creates a grant. The WhatsApp gate must check the exact
+canonical action and invoke its supplied function only with actual authority;
+the calendar authorizer must approve the complete digest-bound provider plan,
+including its notification scope. An OS-hosted integration must use its canonical
+HR12 authorization. The app shows live approval controls only when the relevant
+host callback is installed; installed does not mean an action is authorized.
+
+`Engine(calendars=...)` accepts explicit account-scoped participant bindings.
+Each participant entry contains a `GoogleCalendar` client, email, permitted
+calendar IDs, timezone and working windows. `GoogleCalendar` obtains OAuth tokens
+only through an injected token-provider function and verifies the expected primary
+calendar identity. The API can prepare live proposals with those bindings.
+`execute_calendar` and `execute_calendar_amendment` require the host authorizer;
+the host composition routes reviewed booking and amendment actions to them.
+Neither OAuth tokens nor approval integrations have been installed here.
+
+Live WhatsApp and calendar claims commit before provider mutation. A crash or
+uncertain response retains a reconciliation state that blocks blind replay.
+Read-back verifies account, recipients/event attendees, content/times and exact
+provider identity. A visible sent message does not prove recipient delivery.
+Sparse Google cancellation receipts remain unresolved rather than fabricating
+verification. These paths were tested with fake provider IO, not real recipients.
+
 The selected path is a Wabi number registered as a regular WhatsApp account, then
 linked to Unipile. A paid/owned number and working WhatsApp registration have not
 been established by this build. The old recycled trial number is not reused.
@@ -148,11 +176,11 @@ brief pending review. It refuses to overwrite an existing target account.
 ## Verification
 
 ```powershell
-python -m pytest concierge_service/tests -q
+.local/venv/Scripts/python.exe -m pytest concierge_service/tests -q
 npm test
 npm run typecheck
 npm run build -- --webpack
-python scripts/test-local-dogfood.py
+.local/venv/Scripts/python.exe scripts/test-local-dogfood.py
 ```
 
 The HTTP script requires the local standalone launcher. It creates unique retained

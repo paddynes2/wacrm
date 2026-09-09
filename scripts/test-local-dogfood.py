@@ -88,6 +88,13 @@ def main():
     messages = owner.inbox({'id':contact_id})
     assert len(messages) == 3, 'Introduction/booking must not leak into a direct inbox'
     assert all(m['content_text'].startswith('[Simulation] ') for m in messages)
+    notes = fixture.checked(fixture.local_request(owner.rest,'GET',owner.base+
+        f'/rest/v1/contact_notes?contact_id=eq.{contact_id}&select=id,note_text'))
+    assert len([n for n in notes if 'Calendar cancellation verified.' in n['note_text']]) == 1
+    request('reconcile')
+    repeated = fixture.checked(fixture.local_request(owner.rest,'GET',owner.base+
+        f'/rest/v1/contact_notes?contact_id=eq.{contact_id}&select=id,note_text'))
+    assert {n['id'] for n in repeated} == {n['id'] for n in notes}, 'Outcome reconciliation duplicated notes'
     print(f'PASS: {fixture.COUNT} loopback HTTP requests; durable automatic replies, CRM dedup, introduction, booking/cancellation, STOP, isolation and cost labels.')
     print('Unique test fixtures retained; no live sends or provider charges.')
 

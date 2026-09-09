@@ -45,11 +45,14 @@ def configured_engine():
                   discovery_config=mapping("CONCIERGE_DISCOVERY_JSON"), unipile=clients)
 
 
-def create_app(engine=None, token=None, worker=False, sync_interval=0):
+def create_app(engine=None, token=None, worker=False, sync_interval=0,
+               live_executor=None, live_amendment_executor=None):
     secret = token if token is not None else os.environ.get("WACRM_BRIDGE_TOKEN", "")
     if len(secret) < 32:
         raise RuntimeError("A private bridge token of at least 32 characters is required")
     runtime = engine or configured_engine()
+    if any(value is not None and not callable(value) for value in (live_executor, live_amendment_executor)):
+        raise RuntimeError("Live execution requires explicit host callbacks")
     if type(sync_interval) is not int or (sync_interval != 0 and not 60 <= sync_interval <= 3600):
         raise RuntimeError("Account polling interval must be zero or 60 to 3600 seconds")
     stop = threading.Event()
@@ -88,6 +91,34 @@ def create_app(engine=None, token=None, worker=False, sync_interval=0):
         if not hmac.compare_digest(authorization, "Bearer " + secret):
             raise HTTPException(401, "Private service authentication required")
 
+    def present(account):
+        result = runtime.report(account)
+        ready = result["readiness"]
+        ready["live_execution_enabled"] = runtime.mode == "live" and callable(live_executor)
+        ready["live_amendments_enabled"] = runtime.mode == "live" and callable(live_amendment_executor)
+        if ready["live_execution_enabled"] or ready["live_amendments_enabled"]:
+            ready["reason"] = "Host authorization integration installed; every exact action still requires its gate. Delivery is unverified."
+        return result
+
+    def dispatch(account, body):
+        name = body.get("command") if isinstance(body, dict) else None
+        if runtime.mode == "live" and name in {"approve", "approve_amendment"}:
+            fields = {"decision_id"} if name == "approve" else {"prospect_id", "digest"}
+            if set(body) - fields - {"command", "attested_by"} or not fields.issubset(body):
+                raise ValueError("Invalid exact approval fields")
+            executor = live_executor if name == "approve" else live_amendment_executor
+            if not callable(executor):
+                raise ValueError("Live execution has no installed host authorization integration")
+            # The host callback must invoke the tested exact-action executor through
+            # its real human authorization gate. Neither env nor browser arms it.
+            if name == "approve":
+                executor(runtime, account, body["decision_id"])
+            else:
+                executor(runtime, account, body["prospect_id"], body["digest"])
+            return present(account)
+        runtime.command(account, body)
+        return present(account)
+
     @app.get("/health")
     def health():
         return {"status": "ok", "service": "standalone-concierge", "mode": runtime.mode, "worker": worker}
@@ -95,7 +126,7 @@ def create_app(engine=None, token=None, worker=False, sync_interval=0):
     @app.get("/workspace/{account}/dogfood", dependencies=[Depends(auth)])
     def report(account: str):
         try:
-            return runtime.report(account_id(account))
+            return present(account_id(account))
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
 
@@ -113,7 +144,7 @@ def create_app(engine=None, token=None, worker=False, sync_interval=0):
         try:
             # Process/model calls can block; keep them off the async request loop.
             from starlette.concurrency import run_in_threadpool
-            return await run_in_threadpool(runtime.command, account_id(account), body)
+            return await run_in_threadpool(dispatch, account_id(account), body)
         except (ValueError, KeyError, TypeError) as exc:
             raise HTTPException(409, str(exc) if isinstance(exc, ValueError) else "Invalid command fields") from exc
         except Exception as exc:
