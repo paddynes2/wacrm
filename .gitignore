@@ -48,3 +48,6 @@ next-env.d.ts
 supabase/.branches/
 supabase/.temp/
 scripts/__pycache__/
+concierge_service/**/__pycache__/
+concierge_service/__pycache__/
+.pytest_cache/

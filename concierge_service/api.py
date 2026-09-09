@@ -8,6 +8,7 @@ import logging
 import os
 from pathlib import Path
 import threading
+import time
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 
@@ -44,23 +45,31 @@ def configured_engine():
                   discovery_config=mapping("CONCIERGE_DISCOVERY_JSON"), unipile=clients)
 
 
-def create_app(engine=None, token=None, worker=False):
+def create_app(engine=None, token=None, worker=False, sync_interval=0):
     secret = token if token is not None else os.environ.get("WACRM_BRIDGE_TOKEN", "")
     if len(secret) < 32:
         raise RuntimeError("A private bridge token of at least 32 characters is required")
     runtime = engine or configured_engine()
+    if type(sync_interval) is not int or (sync_interval != 0 and not 60 <= sync_interval <= 3600):
+        raise RuntimeError("Account polling interval must be zero or 60 to 3600 seconds")
     stop = threading.Event()
+    next_sync = {}
 
     def work():
         while not stop.is_set():
-            try:
-                for account in runtime.store.accounts():
-                    if stop.is_set():
-                        break
+            for account in runtime.store.accounts():
+                if stop.is_set():
+                    break
+                try:
                     runtime.process_one(account)
-            except Exception:
-                # Details may contain provider credentials; jobs carry safe failure states.
-                log.error("Concierge worker sweep failed; inspect job state and configuration")
+                    if sync_interval and runtime.mode == "live" and account in runtime.unipile and time.monotonic() >= next_sync.get(account, 0):
+                        # Advance before IO so a failed provider cannot create a tight retry loop.
+                        next_sync[account] = time.monotonic() + sync_interval
+                        from .ingestion import sync_account
+                        sync_account(runtime, account)
+                except Exception:
+                    # One tenant's provider failure must not starve other workspaces.
+                    log.error("Concierge account work failed; inspect job state and configuration")
             stop.wait(2)
 
     @asynccontextmanager
@@ -115,4 +124,5 @@ def create_app(engine=None, token=None, worker=False):
 
 
 def application():
-    return create_app(worker=os.environ.get("CONCIERGE_WORKER_ENABLED") == "1")
+    return create_app(worker=os.environ.get("CONCIERGE_WORKER_ENABLED") == "1",
+                      sync_interval=int(os.environ.get("CONCIERGE_SYNC_INTERVAL_SECONDS", "0")))
