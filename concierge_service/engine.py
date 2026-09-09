@@ -120,7 +120,8 @@ class Engine:
                                          "Controlled live delivery and calendar acceptance"]}
         return {"account_id": doc["account_id"], "mode": self.mode, "brief": doc["brief"],
                 "brief_revision": doc["brief_revision"], "calendar_preferences": doc.get("calendar_preferences", {}), "prospects": ps, "messages": doc["messages"],
-                "decisions": doc["decisions"], "jobs": jobs, "timeline": doc["observations"], "events": doc["events"][-200:],
+                "decisions": doc["decisions"], "jobs": jobs, "timeline": doc["observations"],
+                "amendment_outcomes": [e for e in doc["events"] if e["kind"] == "calendar_amendment_verified"], "events": doc["events"][-200:],
                 "paused": doc["paused"], "readiness": readiness,
                 "metrics": {"discovered": len(ps), "qualified": sum(p.get("qualification") == "qualified" for p in ps),
                             "reachable": sum(p.get("phone_status") == "operator_verified" for p in ps),
@@ -310,8 +311,8 @@ class Engine:
                               "note": text(body.get("note"), "Review note", optional=True)}
                     doc["reviews"] = [r for r in doc["reviews"] if r["prospect_id"] != pid] + [review]
                 elif name == "attended":
-                    if not state.get("booking_id"):
-                        raise ValueError("Attendance requires a verified booking")
+                    if not state.get("booking_id") or p.get("calendar_status") == "cancelled" or p.get("booking", {}).get("status") == "cancelled":
+                        raise ValueError("Attendance requires a verified booking that has not been cancelled")
                     self.observe(doc, pid, "meeting_attended", {"event_id": state["booking_id"]}, source=text(body.get("source_ref"), "Attendance evidence", 500))
                 elif name == "followup":
                     if p.get("calendar_status") == "cancelled" or state["status"] in {"unconfigured", "human_owned", "opted_out", "declined", "reconcile"} or state.get("latest_inbound"):
@@ -724,7 +725,7 @@ class Engine:
         amendment["status"] = "verified"
         self.cancel(db, doc, p["id"])
         self.event(doc, "calendar_amendment_verified", prospect_id=p["id"], operation=proposal["operation"],
-                   digest=supplied_digest, source_ref=card["source_ref"], simulated=True)
+                   digest=supplied_digest, booking_id=candidate["id"], source_ref=card["source_ref"], simulated=True)
 
     def process_one(self, account):
         account = account_id(account)

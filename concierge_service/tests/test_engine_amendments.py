@@ -53,6 +53,9 @@ def test_cancel_has_verified_receipt_and_duplicate_approval_has_no_effect(tmp_pa
     assert result["metrics"]["booked"] == 0
     assert result["metrics"]["bookings_created"] == 1
     assert result["metrics"]["bookings_cancelled"] == 1
+    with pytest.raises(ValueError, match="cancelled"):
+        command(engine, "attended", source_ref="operator:attendance")
+    assert result["amendment_outcomes"][0]["booking_id"] == result["prospects"][0]["booking"]["id"]
     count = len(result["events"])
     with pytest.raises(ValueError, match="pending"):
         approve(engine, report)
@@ -116,3 +119,18 @@ def test_live_mode_cannot_prepare_amendments(tmp_path):
     command(engine, "start")
     with pytest.raises(ValueError, match="simulation"):
         prepare(engine, "cancel")
+
+
+def test_amendment_projection_preserves_history_beyond_event_display_limit(tmp_path):
+    engine, start = booked(tmp_path)
+    approve(engine, prepare(engine, start=start + timedelta(hours=2)))
+    approve(engine, prepare(engine, "cancel"))
+    with engine.store.transaction() as db:
+        doc = engine.store.load(db, A, engine.mode)
+        for _ in range(220):
+            engine.event(doc, "test_later_event")
+        engine.store.save(db, doc)
+    report = engine.report(A)
+    assert len(report["events"]) == 200
+    assert [e["operation"] for e in report["amendment_outcomes"]] == ["reschedule", "cancel"]
+    assert len({e["id"] for e in report["amendment_outcomes"]}) == 2
