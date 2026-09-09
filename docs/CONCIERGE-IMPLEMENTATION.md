@@ -1,5 +1,8 @@
 # Concierge product implementation
 
+> Documentation refreshed 2026-09-09. Implementation/test evidence is from 2026-09-08.
+> Current remaining work: [project backlog](C:/Users/Patrick/OS/products/wa-outreach/REMAINING-WORK.md).
+
 Latest continuation: [IMPLEMENTATION-NEXT.md](IMPLEMENTATION-NEXT.md) records the durable
 worker, sequences, prospect import, connection readiness, live approval integration and CRM
 reconciliation. Scope below describes the first WACRM adoption checkpoint; the continuation

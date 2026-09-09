@@ -1,5 +1,8 @@
 # Test the WhatsApp CRM
 
+> Documentation refreshed 2026-09-09. Implementation/test evidence is from 2026-09-08.
+> Current remaining work: [project backlog](C:/Users/Patrick/OS/products/wa-outreach/REMAINING-WORK.md).
+
 Open http://127.0.0.1:8316/concierge on Patrick's Windows machine.
 
 - Email: `patrick@concierge.test`

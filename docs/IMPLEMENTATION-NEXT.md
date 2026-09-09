@@ -1,5 +1,8 @@
 # Concierge continuation — 2026-09-08
 
+> Documentation refreshed 2026-09-09. Implementation/test evidence is from 2026-09-08.
+> Current remaining work: [project backlog](C:/Users/Patrick/OS/products/wa-outreach/REMAINING-WORK.md).
+
 ## Scope contract
 
 Goal: close every independently implementable local gap between the existing CRM and a
