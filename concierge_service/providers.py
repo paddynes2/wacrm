@@ -157,7 +157,7 @@ def discover(brief: dict, limit: int, config: dict) -> dict:
             continue
         seen.add(identity)
         prospects.append({"id": hashlib.sha256(identity.encode()).hexdigest()[:24], "name": name,
-            "company": company_name, "role": field("jobTitle", "job_title", "title", "headline"),
+            "company": company_name, "domain": domain, "role": field("jobTitle", "job_title", "title", "headline"),
             "phone": None, "phone_status": "missing", "profile_url": profile,
             "source": "treg:" + str(metadata.get("served_by") or "unknown"),
             "fit": "Search candidate; role, fit and contact ownership require corroboration."})

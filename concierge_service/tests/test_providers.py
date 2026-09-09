@@ -32,6 +32,7 @@ class ProvidersTest(unittest.TestCase):
         self.assertEqual(calls[0][3], {"q": "founders", "location": "South Africa", "limit": 5})
         self.assertEqual(result["cost_usd"], 0.02)
         self.assertEqual(result["prospects"][0]["phone_status"], "missing")
+        self.assertEqual(result["prospects"][0]["domain"], "example.invalid")
 
     def test_invalid_config_never_calls(self):
         def forbidden(*args):
