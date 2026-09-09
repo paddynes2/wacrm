@@ -187,4 +187,4 @@ The HTTP script requires the local standalone launcher. It creates unique retain
 local test fixtures and exercises the real authenticated Next route, worker,
 Supabase reconciliation, STOP and account separation. It refuses non-loopback
 destinations. Verification counts and remaining boundaries are recorded in the
-dated implementation report; they must be updated after the final integration.
+[dated verification report](VERIFICATION-DOGFOOD-2026-09-09.md).

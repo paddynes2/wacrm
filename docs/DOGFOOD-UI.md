@@ -10,11 +10,13 @@ Open `/dogfood` after signing into WACRM. The sidebar also links to **Chris dogf
 
 Queued work refreshes automatically while pending. Follow-up and clock controls exercise due work in simulation; takeover exposes a manual simulated reply. Exact returned calendar slots can be selected for booking. After a verified simulated booking, reschedule/cancel preparation presents the proposed change and requires separate approval.
 
-Pause/resume work, retry failed jobs after resolving their cause, preserve old history when starting a pursuit for a revised brief, and download the current pilot evidence as JSON. Live reply synchronization is read-only; no live execution button is exposed.
+Pause/resume work, retry failed jobs after resolving their cause, preserve old history when starting a pursuit for a revised brief, and download the current pilot evidence as JSON. Live reply synchronization is read-only. Exact live approvals are enabled only when the backend reports an installed host authorization callback; the default launcher installs none.
 
 Browser verification on 2026-09-09 used isolated ports 8336/8337 and an isolated SQLite execution store with the existing local test login. The actual rendered workflow saved a QA brief, discovered 10 synthetic candidates, qualified one, initiated automatically, handled typed replies, recorded both-party permissions, approved an introduction, selected an exact returned calendar slot and approved its simulated booking. Backend read-back reported one introduction and one booking with zero provider spend. No CRM contacts were promoted and no external actions occurred. Screenshots remain in the testing worktree's ignored `.local/qa-*.png`; no browser errors were reported. Later amendment controls require the corresponding backend amendment implementation.
 
-Simulation is visibly labeled. Fixture research is fictional and is not live contact verification. The model label comes from the service; configured research/model usage can incur costs. Live mode does not expose an external execution button.
+The final integrated build also passed desktop/mobile amendment, calendar-access, exception and booking-link checks. Saved calendar settings hydrate when selecting the person/party while refresh preserves unsaved edits. See [final verification](VERIFICATION-DOGFOOD-2026-09-09.md) for the canonical app and CRM acceptance results.
+
+Simulation is visibly labeled. Fixture research is fictional and is not live contact verification. The model label comes from the service; configured research/model usage can incur costs. Installing a host callback does not grant an action; the executor still requires actual exact-action authorization.
 
 The number path is Wabi number → registered WhatsApp account → Unipile → Chris. Number ownership, registration, pairing and controlled delivery still require real verification; configuration does not establish live acceptance.
 

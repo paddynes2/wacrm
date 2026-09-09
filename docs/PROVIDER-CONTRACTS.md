@@ -137,7 +137,8 @@ authorization, suppression, exact membership checks and uncertain-effect reconci
 ## Inert reviewed transport boundary
 
 `reviewed_transport.execute_reviewed` implements the exact request/read-back boundary,
-but is not registered in the service or enabled by configuration. It requires all five
+and is inactive in the default service. The optional host composition connects it
+through `live_execution.execute_decision`. It requires all five
 host callbacks: `gate(canonical, send_fn)`, `validate_current(frozen)`,
 `inspect_thread(snapshot, frozen)`, `claim(digest, frozen)`, and
 `record(digest, frozen, status, evidence)`. Missing callbacks refuse before provider I/O.
@@ -161,9 +162,29 @@ direction and text. Provider timeouts, missing receipts and failed read-back rem
 uncertain; no automatic retry occurs. A verified provider message is still not evidence
 that the recipient received or read it. Tests terminate every POST in a fake HTTP client.
 
-Actual operation remains unavailable until the application wires these obligations to
-a reviewed authorization mechanism and its persistent ledger. Implementing this boundary
-does not itself authorize any live send.
+`live_execution.execute_decision` now supplies state/history validation and durable
+started/verified/unknown ledger callbacks. `host.create_authorized_app` connects exact
+reviewed API actions to that executor only when a real host authorization mechanism is
+explicitly supplied. No such mechanism was installed in this session. Implementing this
+boundary does not itself authorize any live send.
+
+## Google Calendar
+
+`calendar_provider.GoogleCalendar` verifies the expected primary calendar account,
+explicit calendar allowlist, complete free/busy coverage and event identity. Tokens
+come only from a host-supplied callable. Booking, reschedule and cancellation plans
+bind the exact HTTP method, URL including `sendUpdates=all`, payload and ETag where
+applicable. Host authorization, durable claim, final preflight and read-back are
+mandatory. Uncertain writes remain blocked from replay; sparse cancellation
+responses never become fabricated full verification.
+
+The live Engine calendar path and optional host API composition were tested against
+fake Google-shaped responses. No OAuth account or real calendar was mutated. Source
+contracts: [free/busy](https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query),
+[event creation](https://developers.google.com/workspace/calendar/api/v3/reference/events/insert),
+[event patch](https://developers.google.com/workspace/calendar/api/v3/reference/events/patch),
+[event resource](https://developers.google.com/workspace/calendar/api/v3/reference/events),
+[calendar identity](https://developers.google.com/workspace/calendar/api/v3/reference/calendarList/get).
 
 ## Source attribution
 
