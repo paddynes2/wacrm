@@ -1,11 +1,59 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { dogfoodRequest, validateDogfoodCommand } from './dogfood';
+import {
+  dogfoodRequest,
+  validateDogfoodCommand,
+  calendarScenarioDraft,
+} from './dogfood';
 
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
 describe('dogfood commands', () => {
+  it('hydrates each party calendar without losing saved asymmetric hours or busy intervals', () => {
+    const windows = [
+      { weekday: 0, start: '08:00', end: '12:00' },
+      { weekday: 2, start: '13:00', end: '18:00' },
+    ];
+    const busy = [
+      { start: '2026-10-01T08:00:00Z', end: '2026-10-01T09:00:00Z' },
+    ];
+    const report = {
+      brief: { timezone: 'Africa/Johannesburg' },
+      calendar_preferences: {
+        timezone: 'Europe/London',
+        calendar_access: true,
+        windows: [{ weekday: 1, start: '10:00', end: '16:00' }],
+      },
+      prospects: [
+        {
+          id: 'p',
+          calendar_preferences: {
+            timezone: 'America/New_York',
+            calendar_access: false,
+            windows,
+            simulated_busy: busy,
+          },
+        },
+        { id: 'other' },
+      ],
+    };
+    expect(calendarScenarioDraft(report, 'p', 'recipient')).toEqual({
+      timezone: 'America/New_York',
+      calendar_access: false,
+      windows,
+      simulated_busy: busy,
+    });
+    expect(calendarScenarioDraft(report, 'p', 'principal')).toMatchObject({
+      timezone: 'Europe/London',
+      calendar_access: true,
+    });
+    expect(calendarScenarioDraft(report, 'other', 'recipient')).toMatchObject({
+      timezone: 'Africa/Johannesburg',
+      calendar_access: true,
+      simulated_busy: [],
+    });
+  });
   it('validates calendar scenario bounds without granting availability', () => {
     const value = {
       command: 'calendar_preferences',

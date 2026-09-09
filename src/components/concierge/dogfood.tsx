@@ -2,6 +2,11 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  calendarScenarioDraft,
+  type CalendarWindow,
+  type CalendarBusy,
+} from '@/lib/concierge/dogfood';
 
 type Row = Record<string, unknown>;
 type Prospect = {
@@ -39,6 +44,7 @@ type Brief = {
   budget_usd: number;
 };
 type Report = {
+  calendar_preferences?: Row;
   mode: 'simulation' | 'live';
   brief: Brief | null;
   brief_revision: number;
@@ -121,6 +127,9 @@ export function DogfoodWorkspace() {
   const [workingDays, setWorkingDays] = useState([0, 1, 2, 3, 4]);
   const [calendarAccess, setCalendarAccess] = useState(true);
   const [busyInterval, setBusyInterval] = useState(false);
+  const [savedWindows, setSavedWindows] = useState<CalendarWindow[]>([]);
+  const [savedBusy, setSavedBusy] = useState<CalendarBusy[]>([]);
+  const [workingHoursEdited, setWorkingHoursEdited] = useState(false);
   const initialized = useRef(false);
   const pending = useRef(false);
   const refresh = useCallback(async () => {
@@ -178,6 +187,8 @@ export function DogfoodWorkspace() {
           'The action completed, but the workspace could not refresh. Refresh before repeating it.'
         );
       }
+      if (command === 'calendar_preferences' && Array.isArray(data.prospects))
+        hydrateCalendar(data, selected, party);
       setNotice(
         typeof data.crm_warning === 'string'
           ? data.crm_warning
@@ -199,6 +210,27 @@ export function DogfoodWorkspace() {
   const prospect = report?.prospects.find((p) => p.id === selected);
   const simulation = report?.mode === 'simulation';
   const selectedFields = { prospect_id: selected };
+  function hydrateCalendar(
+    value: Report | null,
+    id: string,
+    targetParty: string
+  ) {
+    if (!value) return;
+    const draft = calendarScenarioDraft(value, id, targetParty);
+    setCalendarTimezone(draft.timezone);
+    setCalendarAccess(draft.calendar_access);
+    setSavedWindows(draft.windows);
+    setSavedBusy(draft.simulated_busy);
+    setWorkingStart(draft.windows[0]?.start || '09:00');
+    setWorkingEnd(draft.windows[0]?.end || '17:00');
+    setWorkingDays([...new Set(draft.windows.map((window) => window.weekday))]);
+    setWorkingHoursEdited(false);
+    setBusyInterval(false);
+  }
+  function selectParty(value: string) {
+    setParty(value);
+    hydrateCalendar(report, selected, value);
+  }
   function selectProspect(id: string) {
     if (id === selected) return;
     setSelected(id);
@@ -212,6 +244,7 @@ export function DogfoodWorkspace() {
     setMinutes(0);
     setUseful(true);
     setPhone(report?.prospects.find((p) => p.id === id)?.phone || '');
+    hydrateCalendar(report, id, party);
   }
   function exportPilot() {
     if (!report) return;
@@ -745,7 +778,7 @@ export function DogfoodWorkspace() {
                 <select
                   className={input}
                   value={party}
-                  onChange={(e) => setParty(e.target.value)}
+                  onChange={(e) => selectParty(e.target.value)}
                 >
                   <option value="recipient">Recipient</option>
                   <option value="principal">You</option>
@@ -885,13 +918,14 @@ export function DogfoodWorkspace() {
                 <input
                   type="checkbox"
                   checked={workingDays.includes(day)}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setWorkingHoursEdited(true);
                     setWorkingDays(
                       e.target.checked
                         ? [...workingDays, day].sort()
                         : workingDays.filter((value) => value !== day)
-                    )
-                  }
+                    );
+                  }}
                 />
                 {label}
               </label>
@@ -904,7 +938,10 @@ export function DogfoodWorkspace() {
                 className={input}
                 type="time"
                 value={workingStart}
-                onChange={(e) => setWorkingStart(e.target.value)}
+                onChange={(e) => {
+                  setWorkingStart(e.target.value);
+                  setWorkingHoursEdited(true);
+                }}
               />
             </label>
             <label className="text-sm">
@@ -913,7 +950,10 @@ export function DogfoodWorkspace() {
                 className={input}
                 type="time"
                 value={workingEnd}
-                onChange={(e) => setWorkingEnd(e.target.value)}
+                onChange={(e) => {
+                  setWorkingEnd(e.target.value);
+                  setWorkingHoursEdited(true);
+                }}
               />
             </label>
           </div>
@@ -931,8 +971,13 @@ export function DogfoodWorkspace() {
               checked={busyInterval}
               onChange={(e) => setBusyInterval(e.target.checked)}
             />
-            Mark the Start/End interval above as busy
+            Replace saved busy intervals with the Start/End interval above
           </label>
+          <p className="text-muted-foreground text-sm">
+            {savedBusy.length} saved busy interval(s). Editing working hours
+            applies one interval to the selected days; otherwise the saved
+            schedule is preserved.
+          </p>
           <div className="flex flex-wrap gap-2">
             <button
               className={button}
@@ -947,13 +992,15 @@ export function DogfoodWorkspace() {
                   ...selectedFields,
                   party,
                   timezone: calendarTimezone,
-                  windows: workingDays.map((weekday) => ({
-                    weekday,
-                    start: workingStart,
-                    end: workingEnd,
-                  })),
+                  windows: workingHoursEdited
+                    ? workingDays.map((weekday) => ({
+                        weekday,
+                        start: workingStart,
+                        end: workingEnd,
+                      }))
+                    : savedWindows,
                   calendar_access: calendarAccess,
-                  simulated_busy: busyInterval ? [{ start, end }] : [],
+                  simulated_busy: busyInterval ? [{ start, end }] : savedBusy,
                   source_ref: evidence,
                 })
               }

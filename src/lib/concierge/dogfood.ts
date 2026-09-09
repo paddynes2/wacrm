@@ -54,6 +54,44 @@ const commands: Record<string, string[]> = {
   prepare_amendment: ['prospect_id', 'operation', 'start', 'end', 'source_ref'],
   approve_amendment: ['prospect_id', 'digest'],
 };
+export type CalendarWindow = { weekday: number; start: string; end: string };
+export type CalendarBusy = { start: string; end: string };
+/** Forms load only on explicit context changes; background reports must not erase edits. */
+export function calendarScenarioDraft(
+  report: {
+    brief?: { timezone?: string } | null;
+    calendar_preferences?: unknown;
+    prospects: { id: string; calendar_preferences?: unknown }[];
+  },
+  prospectId: string,
+  party: string
+) {
+  const saved =
+    party === 'principal'
+      ? report.calendar_preferences
+      : report.prospects.find((p) => p.id === prospectId)?.calendar_preferences;
+  const settings = isObject(saved) ? saved : {};
+  return {
+    timezone:
+      typeof settings.timezone === 'string'
+        ? settings.timezone
+        : report.brief?.timezone || 'Africa/Johannesburg',
+    windows: (Array.isArray(settings.windows)
+      ? settings.windows
+      : [0, 1, 2, 3, 4].map((weekday) => ({
+          weekday,
+          start: '09:00',
+          end: '17:00',
+        }))) as CalendarWindow[],
+    calendar_access:
+      typeof settings.calendar_access === 'boolean'
+        ? settings.calendar_access
+        : true,
+    simulated_busy: (Array.isArray(settings.simulated_busy)
+      ? settings.simulated_busy
+      : []) as CalendarBusy[],
+  };
+}
 function fail(message: string): never {
   throw new BridgeError(message, 400);
 }
