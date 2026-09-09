@@ -81,6 +81,14 @@ const button =
 const panel = 'space-y-4 rounded-xl border bg-card p-5';
 const display = (value: unknown) =>
   typeof value === 'string' ? value : JSON.stringify(value ?? null);
+function meetingLabel(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    return 'Not available';
+  const meeting = value as Row;
+  return meeting.status === 'cancelled'
+    ? 'Meeting cancelled'
+    : `${String(meeting.start || 'Unknown start')} → ${String(meeting.end || 'Unknown end')}`;
+}
 
 export function DogfoodWorkspace() {
   const [report, setReport] = useState<Report | null>(null);
@@ -226,7 +234,10 @@ export function DogfoodWorkspace() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+    <section
+      aria-label="Chris dogfood workspace"
+      className="mx-auto max-w-6xl space-y-6 p-4 md:p-8"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Chris · Outbound dogfood</h1>
@@ -1013,9 +1024,24 @@ export function DogfoodWorkspace() {
           {prospect.amendment && (
             <div className="space-y-3 rounded-md border p-3">
               <p className="text-sm">{prospect.amendment.status}</p>
-              <pre className="overflow-auto text-xs whitespace-pre-wrap">
-                {JSON.stringify(prospect.amendment.proposal, null, 2)}
-              </pre>
+              <dl className="space-y-2 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">Current meeting</dt>
+                  <dd>{meetingLabel(prospect.amendment.proposal.before)}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Proposed change</dt>
+                  <dd>{meetingLabel(prospect.amendment.proposal.after)}</dd>
+                </div>
+              </dl>
+              <details>
+                <summary className="cursor-pointer text-sm">
+                  Review supporting evidence
+                </summary>
+                <pre className="overflow-auto text-xs whitespace-pre-wrap">
+                  {JSON.stringify(prospect.amendment.proposal, null, 2)}
+                </pre>
+              </details>
               <button
                 className={button}
                 disabled={busy || prospect.amendment.status !== 'pending'}
@@ -1331,6 +1357,6 @@ export function DogfoodWorkspace() {
               ))}
           </section>
         )}
-    </main>
+    </section>
   );
 }
