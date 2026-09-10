@@ -1,5 +1,11 @@
 # Chris standalone dogfood
 
+The endeavour-to-WhatsApp introduction product is now at `/chris`. See the
+[Chris operations guide](CHRIS-WHATSAPP-PLAN/OPERATIONS.md),
+[implementation results](CHRIS-WHATSAPP-PLAN/BUILD-RESULTS.md) and
+[acceptance evidence](CHRIS-WHATSAPP-PLAN/ACCEPTANCE-EVIDENCE.md).
+The `/dogfood` calendar/simulator workflow below remains available.
+
 Implementation checkpoint: 2026-09-09. The product runs from this WACRM checkout.
 It does not import Fleet or require Patrick's OS. The original Fleet reducer,
 calendar and amendment rules were extracted with their tests; see

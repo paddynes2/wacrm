@@ -46,11 +46,14 @@ def configured_engine():
 
 
 def create_app(engine=None, token=None, worker=False, sync_interval=0,
-               live_executor=None, live_amendment_executor=None):
+               live_executor=None, live_amendment_executor=None, chris_authorizer=None):
     secret = token if token is not None else os.environ.get("WACRM_BRIDGE_TOKEN", "")
     if len(secret) < 32:
         raise RuntimeError("A private bridge token of at least 32 characters is required")
     runtime = engine or configured_engine()
+    from .chris.runtime import Runtime
+    chris = Runtime(runtime, mapping('CONCIERGE_CHRIS_SETTINGS_JSON'), chris_authorizer,
+                    os.environ.get('CONCIERGE_WACRM_INTERNAL_URL'), secret)
     if any(value is not None and not callable(value) for value in (live_executor, live_amendment_executor)):
         raise RuntimeError("Live execution requires explicit host callbacks")
     if type(sync_interval) is not int or (sync_interval != 0 and not 60 <= sync_interval <= 3600):
@@ -60,6 +63,10 @@ def create_app(engine=None, token=None, worker=False, sync_interval=0,
 
     def work():
         while not stop.is_set():
+            try:
+                chris.tick()
+            except Exception:
+                log.error('Chris worker tick failed; legacy processing continues')
             for account in runtime.store.accounts():
                 if stop.is_set():
                     break
@@ -82,6 +89,7 @@ def create_app(engine=None, token=None, worker=False, sync_interval=0,
             thread.start()
         yield
         stop.set()
+        chris.scheduler.close()
         if thread:
             thread.join(timeout=5)
 
@@ -151,9 +159,14 @@ def create_app(engine=None, token=None, worker=False, sync_interval=0,
             raise HTTPException(503, "Provider unavailable; inspect readiness and retry-safe job state") from exc
 
     app.state.engine = runtime
+    from .chris.api import install
+    install(app, chris.service, auth, chris.projection)
+    app.state.chris = chris
     return app
 
 
 def application():
+    from .chris.dispatch import product_authorizer
     return create_app(worker=os.environ.get("CONCIERGE_WORKER_ENABLED") == "1",
-                      sync_interval=int(os.environ.get("CONCIERGE_SYNC_INTERVAL_SECONDS", "0")))
+                      sync_interval=int(os.environ.get("CONCIERGE_SYNC_INTERVAL_SECONDS", "0")),
+                      chris_authorizer=product_authorizer)

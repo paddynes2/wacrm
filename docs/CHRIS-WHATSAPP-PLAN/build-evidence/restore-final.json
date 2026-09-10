@@ -1,0 +1,20 @@
+{
+  "database_integrity": "ok",
+  "path_writable": true,
+  "accounts": [
+    {
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "schema_version": 1,
+      "document_bytes": 37281,
+      "mode": "simulation",
+      "external_enabled": false,
+      "worker_heartbeat": 1789039573.550445,
+      "unresolved_actions": 0,
+      "pending_projections": 0,
+      "principal_bound": true,
+      "whatsapp_bound": true
+    }
+  ],
+  "reason_codes": [],
+  "live_acceptance_verified": false
+}

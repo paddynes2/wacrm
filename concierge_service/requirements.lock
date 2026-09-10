@@ -7,6 +7,7 @@ colorama==0.4.6; sys_platform == 'win32'
 fastapi==0.128.8
 h11==0.16.0
 idna==3.11
+phonenumbers==9.0.38
 pydantic-core==2.41.5
 pydantic==2.12.5
 starlette==0.52.1

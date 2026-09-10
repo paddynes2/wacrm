@@ -1,0 +1,116 @@
+{
+  "commands": {
+    "brief.propose": [
+      "text"
+    ],
+    "brief.save_proposal": [
+      "proposal_id",
+      "brief"
+    ],
+    "brief.activate": [
+      "proposal_id"
+    ],
+    "research.start": [],
+    "workspace.pause": [
+      "reason"
+    ],
+    "workspace.resume": [],
+    "autonomy.set": [
+      "enabled",
+      "scope_kinds",
+      "displayed_authority_revision"
+    ],
+    "settings.update": [],
+    "principal.challenge": [],
+    "principal.unbind": [
+      "reason"
+    ],
+    "person.exclude": [
+      "person_id",
+      "reason"
+    ],
+    "person.defer": [
+      "person_id",
+      "not_before",
+      "reason"
+    ],
+    "person.identity_attest": [
+      "person_id",
+      "phone_e164",
+      "evidence_refs",
+      "attestation_text"
+    ],
+    "permission.record": [
+      "person_id",
+      "kind",
+      "source_ref",
+      "scope_text",
+      "granted_at",
+      "business_sender_identity",
+      "attestation_text"
+    ],
+    "permission.revoke": [
+      "permission_id",
+      "reason"
+    ],
+    "pursuit.takeover": [
+      "pursuit_id",
+      "reason"
+    ],
+    "pursuit.resume": [
+      "pursuit_id",
+      "reviewed_thread_watermark"
+    ],
+    "message.draft": [
+      "pursuit_id",
+      "text"
+    ],
+    "message.approve": [
+      "action_id",
+      "displayed_digest"
+    ],
+    "action.reconcile": [
+      "action_id"
+    ],
+    "action.cancel": [
+      "action_id",
+      "reason"
+    ],
+    "projection.retry": [
+      "projection_id"
+    ],
+    "connection.refresh": []
+  },
+  "owner": [
+    "autonomy.set",
+    "brief.activate",
+    "brief.save_proposal",
+    "message.approve",
+    "permission.record",
+    "person.identity_attest",
+    "principal.challenge",
+    "principal.unbind",
+    "pursuit.resume",
+    "settings.update",
+    "workspace.resume"
+  ],
+  "settings": [
+    "daily_invites",
+    "daily_micro_usd",
+    "daily_operations",
+    "daily_total",
+    "job_micro_usd",
+    "principal_messages_enabled",
+    "research_enabled",
+    "timezone"
+  ],
+  "kinds": [
+    "followup",
+    "group_create",
+    "group_introduction",
+    "invite",
+    "permission_clarification",
+    "principal_reply",
+    "reply"
+  ]
+}

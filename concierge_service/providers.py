@@ -58,12 +58,12 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def http_request(method, url, headers, body):
+def http_request(method, url, headers, body, *, timeout=60):
     """One bounded request. No redirects or retries, including paid POSTs."""
     encoded = None if body is None else json.dumps(body, allow_nan=False).encode()
     request = urllib.request.Request(url, data=encoded, headers=headers, method=method)
     try:
-        with urllib.request.build_opener(_NoRedirect).open(request, timeout=60) as response:
+        with urllib.request.build_opener(_NoRedirect).open(request, timeout=timeout) as response:
             raw = response.read(MAX_RESPONSE_BYTES + 1)
             if len(raw) > MAX_RESPONSE_BYTES:
                 raise ProviderError("provider response exceeds limit")

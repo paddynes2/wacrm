@@ -1,0 +1,63 @@
+{
+  "contacts": [
+    {
+      "id": "c9349b4b-29a3-5aa5-8a21-b37577abc920",
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "user_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+      "name": "Maya Chen",
+      "company": "Cedar Distribution",
+      "phone": "+15550001003",
+      "phone_normalized": "15550001003"
+    }
+  ],
+  "contact_notes": [
+    {
+      "id": "7a34e3a3-5c6e-5222-be2b-92fda608d6c2",
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "contact_id": "c9349b4b-29a3-5aa5-8a21-b37577abc920",
+      "user_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+      "note_text": "[Simulation] Chris research: Direct relevance to distribution, with recipient benefit still unknown.\nDossier: /chris/people/19c2fa49-a5b3-4901-88ef-6e38bcd955db\nEvidence event: 9b824954-a19e-4be4-b298-119e59580cfa"
+    },
+    {
+      "id": "0b642035-d85f-57a8-9a97-7e10685c0f56",
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "contact_id": "c9349b4b-29a3-5aa5-8a21-b37577abc920",
+      "user_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+      "note_text": "[Simulation] WhatsApp introduction observed in the intended group.\nChris: /chris/introductions/a20371bd-57a8-4496-b606-f3d2e87710ab\nEvidence event: 20563418-6f55-4eb2-8241-1f7df55c43d3"
+    }
+  ],
+  "conversations": [
+    {
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "user_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+      "contact_id": "c9349b4b-29a3-5aa5-8a21-b37577abc920",
+      "id": "e87a4ec0-8cff-498e-9380-df7c0a2a08a8",
+      "last_message_text": "[Simulation] Yes please",
+      "last_message_at": "2026-09-10T11:26:15.300Z"
+    }
+  ],
+  "messages": [
+    {
+      "message_id": "simulation:synthetic-direct:synthetic-1",
+      "content_text": "[Simulation] Hi Maya, I'm Chris, an AI assistant working with Alex. Your distribution work looked relevant. Would you like a WhatsApp introduction in a group with Alex and me? You would both see each other's number.",
+      "sender_type": "bot",
+      "created_at": "2026-09-10T11:26:14.732Z",
+      "conversation_id": "e87a4ec0-8cff-498e-9380-df7c0a2a08a8",
+      "content_type": "text",
+      "status": "sent",
+      "sender_id": null,
+      "id": "6da673f4-a2a5-491c-9cd8-1c56dcba146f"
+    },
+    {
+      "message_id": "simulation:synthetic-direct:qa-consent",
+      "content_text": "[Simulation] Yes please",
+      "sender_type": "customer",
+      "created_at": "2026-09-10T11:26:15.300Z",
+      "conversation_id": "e87a4ec0-8cff-498e-9380-df7c0a2a08a8",
+      "content_type": "text",
+      "status": "sent",
+      "sender_id": null,
+      "id": "7280b0d9-c11d-4fbf-aca1-790e8c0a8ab2"
+    }
+  ]
+}

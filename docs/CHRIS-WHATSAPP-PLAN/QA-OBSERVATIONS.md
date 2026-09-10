@@ -1,0 +1,23 @@
+# Browser and integration observations
+
+The actual Next application ran at loopback port 18762 against the real private Chris API at 18761. Only provider/auth/CRM I/O was synthetic, using the guarded QA host. The existing WACRM login, account role lookup, pages and public routes were exercised. No production Supabase auth or RLS was altered.
+
+| Journey | Observation and evidence |
+|---|---|
+| Fresh workspace | No invented prospects, messaging off, research setup needed, zero outcomes. [390x844](build-evidence/first-run-mobile.png). |
+| Brief activation | Entered an expert endeavour, public name/background, Europe/London and optional archetype; reviewed and activated through real commands. Unspecified geography remained global; WhatsApp was not required. [Desktop](build-evidence/activated-desktop-top.png), [mobile](build-evidence/activated-mobile-top.png). |
+| Active research / ambiguous reply | Real fixture search/read/registration/dossier made the candidate visible. "Sure, tell me more" remained attention, with no group permission. UI direct conversation and permission gap inspected; executable semantic/ingestion tests retain the assertions. |
+| Partial group | Missing principal membership showed partial progress, zero completed introductions and no substantive message. Restoring exact membership completed once. UI inspected during staged replay; executable group tests provide reproducible evidence. |
+| Final introduction / CRM | Intended Chris/Alex/Maya group, independently observed membership and substantive message; no pending CRM warning after real callback. [Desktop](build-evidence/final-intro-desktop.png), [mobile top](build-evidence/final-intro-mobile.png), [mobile detail](build-evidence/final-intro-mobile-detail.png). No delivery/read-by-both claim. |
+| Pause | Console pause persisted and changed the control to Resume work. [Mobile](build-evidence/mobile-paused.png). Final synthetic authority was explicitly disabled as well. |
+| Offline | Browser network disabled. The alert explains interruption and draft preservation; no invented progress. [Mobile alert](build-evidence/final-offline-mobile.png). Existing development realtime/offline badge is visible. |
+| Revision conflict | Delayed overview polling, advanced the service revision independently, then submitted a stale command. Captured actual POST409; textarea still held "Preserve this draft through a revision conflict". [Preserved draft](build-evidence/revision-conflict-mobile.png). |
+| Keyboard | Actual Tab moved focus to the labelled endeavour textarea; computed outline was solid and visibly blue. [Focus evidence](build-evidence/keyboard-mobile.png). Status and errors use text plus status/alert/aria-live, not colour alone. |
+| 50-person pagination | Loaded first25 then Load more, verified50 person links and no remaining Load more. Long accented/Japanese names wrapped without horizontal overflow: innerWidth390, document scrollWidth390. [Loaded mobile list](build-evidence/people-mobile.png). |
+| Account switch / slow fetch | Account, abort and monotonic revision fences cover polling, manual refresh and command continuations. Executable read-fence tests reject a late A result after B becomes current. |
+
+The initial saved list screenshot was taken during loading. Inspecting it revealed an empty-state flash and a stale pagination control. The implementation now distinguishes loading from empty, clears cursor on account/route change and retains loaded pages during polling. The saved list image was replaced after verifying all50 rendered records.
+
+BrowserOS Neo was used first. Its input APIs sometimes reported success without moving focus or submitting clicks; subsequent keyboard and final UI checks used the installed agent-browser CLI with quoted element references and actual DOM/state observations. A CLI wait for a particular person on page2 timed out while page1 was correctly loaded; no application failure was inferred from that automation error. Only owned test sessions/services were stopped.
+
+The callback replay used fresh `qa-first-run.sqlite`, created by the UI. The 50-person stress view used separate `qa-execution.sqlite`, also synthetic. Neither database nor credentials are committed. Saved trace and CRM rows contain only named synthetic test data. Polling of the UI is not used to drive research, ingestion, dispatch or projection.

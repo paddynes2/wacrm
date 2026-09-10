@@ -1,0 +1,34 @@
+Chris offline verification - 2026-09-10
+
+Worktree: C:/wacrm-chris-build-20260910
+Branch: codex/chris-wa-build-20260910
+Base: c54fde5
+Manifest: 37 source hashes matched
+Baseline: 246 Python tests; 978 TypeScript tests / 97 files
+
+Pinned requirements-dev.txt Python run:
+........................................................................ [ 17%]
+........................................................................ [ 34%]
+........................................................................ [ 51%]
+........................................................................ [ 68%]
+........................................................................ [ 85%]
+.............................................................            [100%]
+421 passed in 70.96s (0:01:10)
+
+TypeScript final result:
+
+ Test Files  103 passed (103)
+      Tests  1018 passed (1018)
+   Start at  13:41:12
+   Duration  5.13s (transform 13.09s, setup 0ms, import 26.90s, tests 1.76s, environment 14ms)
+
+Typecheck: exit 0
+Quiet lint: exit 0
+Production build: exit 0, Next 16.2.12, 75 pages
+Preflight: database_integrity ok; no reason codes
+Backup/restore: checksums verified, authority disabled
+Integrated replay: 3 wire receipts, 1 completed outcome, 5 projection acknowledgements
+CRM: 1 contact, 2 notes, 1 direct conversation, 2 messages
+Mobile pagination: width390, scrollWidth390, 50 person links, no Load more
+UI conflict: actual POST409, textarea preserved
+No live provider operations or paid calls

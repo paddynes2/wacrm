@@ -13,7 +13,7 @@ const META_API_VERSION = 'v21.0'
 const META_API_BASE = `https://graph.facebook.com/${META_API_VERSION}`
 
 function assertMetaOutboundEnabled() {
-  if (process.env.WACRM_BRIDGE_URL?.trim()) {
+  if (process.env.WACRM_BRIDGE_URL?.trim() || process.env.WACRM_STANDALONE === '1') {
     throw new Error('Meta outbound is disabled for this concierge workspace. Use Concierge to review and approve messages.')
   }
 }

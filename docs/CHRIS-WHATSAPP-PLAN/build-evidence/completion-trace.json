@@ -1,0 +1,847 @@
+{
+  "events": [
+    {
+      "event_id": "4a6dad04-0f9a-4cc9-a0c7-1b67a7130b9a",
+      "kind": "brief.propose",
+      "entity_id": null,
+      "observed_seq": 1,
+      "occurred_at": 1789037360.0994577,
+      "payload": {
+        "actor_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+        "command_id": "a237b944-2f28-4d42-87b8-b89471ed40ce"
+      }
+    },
+    {
+      "event_id": "fea68afa-4bd3-4703-b37f-b9e6ae867e12",
+      "kind": "brief.save_proposal",
+      "entity_id": null,
+      "observed_seq": 2,
+      "occurred_at": 1789037450.1656737,
+      "payload": {
+        "actor_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+        "command_id": "7823ac40-c19d-4f0d-bd2f-8883d649c4e3"
+      }
+    },
+    {
+      "event_id": "6b6b308c-f48f-452a-bb7a-885b39efd860",
+      "kind": "brief.activate",
+      "entity_id": null,
+      "observed_seq": 3,
+      "occurred_at": 1789037450.23621,
+      "payload": {
+        "actor_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+        "command_id": "a01ce461-cf9b-466d-95e7-c49a84bd60db"
+      }
+    },
+    {
+      "event_id": "7b7a6625-6c8a-4dfd-a7c7-1c2bec5fe008",
+      "kind": "discovery_search",
+      "entity_id": null,
+      "observed_seq": 4,
+      "occurred_at": 1789039573.6356997,
+      "payload": {
+        "source_id": "6f2119c6-eb54-484d-bbe7-d612c4cc6265"
+      }
+    },
+    {
+      "event_id": "88bd65ac-e3d1-48c2-93be-7e3e4fd594f5",
+      "kind": "source_read",
+      "entity_id": null,
+      "observed_seq": 5,
+      "occurred_at": 1789039573.7492323,
+      "payload": {
+        "source_id": "5587fd14-cb38-4dd6-92db-518943abb47e"
+      }
+    },
+    {
+      "event_id": "a2da6c17-016f-459d-8a36-675cd2688b05",
+      "kind": "person_registered",
+      "entity_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+      "observed_seq": 6,
+      "occurred_at": 1789039573.8240976,
+      "payload": {
+        "source_id": "5587fd14-cb38-4dd6-92db-518943abb47e"
+      }
+    },
+    {
+      "event_id": "57b92223-4afd-4394-81cc-90acfbd94c53",
+      "kind": "dossier_written",
+      "entity_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+      "observed_seq": 7,
+      "occurred_at": 1789039573.952531,
+      "payload": {
+        "dossier_ref": "17a5f991fc830720296cdb4b232cd022d60509bd2e7bcc4accefda066f9b6afc"
+      }
+    },
+    {
+      "event_id": "28c336c7-a73d-4201-94e9-12dbeabf2ed9",
+      "kind": "research_critic_accepted",
+      "entity_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+      "observed_seq": 8,
+      "occurred_at": 1789039574.057745,
+      "payload": {
+        "run_id": "fca7a8d0-5bfc-4210-baf9-5f1edb91eed5"
+      }
+    },
+    {
+      "event_id": "c93470d5-db19-4a3b-a071-a44248270848",
+      "kind": "qualification",
+      "entity_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+      "observed_seq": 9,
+      "occurred_at": 1789039574.057745,
+      "payload": {
+        "verdict": "qualified"
+      }
+    },
+    {
+      "event_id": "5ad88911-b7d8-4085-9f5b-9dd509b229a0",
+      "kind": "research_checkpoint",
+      "entity_id": null,
+      "observed_seq": 10,
+      "occurred_at": 1789039574.1176662,
+      "payload": {
+        "summary": "Progress against the active endeavour."
+      }
+    },
+    {
+      "event_id": "7203d9ba-4387-4e36-878d-01f1a474bf34",
+      "kind": "principal.challenge",
+      "entity_id": null,
+      "observed_seq": 11,
+      "occurred_at": 1789039574.6291957,
+      "payload": {
+        "actor_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+        "command_id": "5726ced2-9d9d-4f7e-b304-731a8fa817a1"
+      }
+    },
+    {
+      "event_id": "9b824954-a19e-4be4-b298-119e59580cfa",
+      "kind": "contact_identity_attested",
+      "entity_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+      "observed_seq": 12,
+      "occurred_at": 1789039574.6569638,
+      "payload": {}
+    },
+    {
+      "event_id": "4bef3cac-4b9c-4cfb-882b-a3353f95abe3",
+      "kind": "person.identity_attest",
+      "entity_id": null,
+      "observed_seq": 13,
+      "occurred_at": 1789039574.6569638,
+      "payload": {
+        "actor_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+        "command_id": "1205f12a-69ee-4a3c-90fb-9030ea090c5d"
+      }
+    },
+    {
+      "event_id": "c75cd930-3488-497e-9a00-c6f60f88d013",
+      "kind": "permission.record",
+      "entity_id": null,
+      "observed_seq": 14,
+      "occurred_at": 1789039574.674927,
+      "payload": {
+        "actor_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+        "command_id": "8f4ed8fc-c01d-408b-bf69-46963e12279c"
+      }
+    },
+    {
+      "event_id": "e5f5611c-5faa-45be-89bc-678973b7ec62",
+      "kind": "autonomy.set",
+      "entity_id": null,
+      "observed_seq": 15,
+      "occurred_at": 1789039574.6889875,
+      "payload": {
+        "actor_id": "5db9ee8c-8fca-4c6c-9dda-a73e4ec91931",
+        "command_id": "c77d13c2-2e44-42f3-85b2-4d32fa0dfbeb"
+      }
+    },
+    {
+      "event_id": "d22ed13c-bccc-48c9-8712-0692fdb14ea5",
+      "kind": "action_started",
+      "entity_id": "7d86f44b-5e1e-4b0b-b321-344a02171e7b",
+      "observed_seq": 16,
+      "occurred_at": 1789039574.7183783,
+      "payload": {
+        "digest": "d3467a3dc86766bc4c2b0f879e102de3928974fd915caa403a25b21d0cbb1580"
+      }
+    },
+    {
+      "event_id": "92250351-7255-4fc8-ab37-4623b2fbc085",
+      "kind": "direct_message_verified",
+      "entity_id": "7d86f44b-5e1e-4b0b-b321-344a02171e7b",
+      "observed_seq": 17,
+      "occurred_at": 1789039574.7523892,
+      "payload": {}
+    },
+    {
+      "event_id": "25aaa133-301d-4bfb-befe-51c91dd34598",
+      "kind": "action_verified",
+      "entity_id": "7d86f44b-5e1e-4b0b-b321-344a02171e7b",
+      "observed_seq": 18,
+      "occurred_at": 1789039574.7523892,
+      "payload": {
+        "digest": "d3467a3dc86766bc4c2b0f879e102de3928974fd915caa403a25b21d0cbb1580",
+        "message_id": "synthetic-1"
+      }
+    },
+    {
+      "event_id": "ea1da8ec-c7e4-49e2-af03-cb88624f49d2",
+      "kind": "message_observed",
+      "entity_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+      "observed_seq": 19,
+      "occurred_at": 1789039575.3007548,
+      "payload": {
+        "message_id": "qa-consent",
+        "thread_key": "unipile:1:synthetic-wa:synthetic-direct"
+      },
+      "provider_timestamp": 1789039575.3007548,
+      "message": {
+        "message_id": "qa-consent",
+        "sender_id": "15550001003@s.whatsapp.net",
+        "timestamp": 1789039575.3007548,
+        "kind": "text",
+        "text": "Yes please",
+        "outbound": false
+      },
+      "digest": "dc8018c0e6728505902302a0fcedff700fec8a0d5e0ef4b687b967e844caf3b3",
+      "provider_original_timestamp": 1789039575.3007548
+    },
+    {
+      "event_id": "04d12dc1-6a2d-4e99-9504-0020d8ed7be3",
+      "kind": "action_started",
+      "entity_id": "79b4d5e1-9192-4877-8796-4a26b4195cd1",
+      "observed_seq": 20,
+      "occurred_at": 1789039575.8766491,
+      "payload": {
+        "digest": "d558a2751fc0efb9720b5c91529be2d368da0d2559a3d85f7772ae917f93aef7"
+      }
+    },
+    {
+      "event_id": "5d166e88-29df-4914-a079-b1a650586e75",
+      "kind": "action_verified",
+      "entity_id": "79b4d5e1-9192-4877-8796-4a26b4195cd1",
+      "observed_seq": 21,
+      "occurred_at": 1789039575.9251134,
+      "payload": {
+        "digest": "d558a2751fc0efb9720b5c91529be2d368da0d2559a3d85f7772ae917f93aef7",
+        "message_id": "synthetic-2"
+      }
+    },
+    {
+      "event_id": "08fa7396-de2a-40fa-8e77-2321755dbb23",
+      "kind": "action_started",
+      "entity_id": "bfdd70e1-fe46-4bfe-b553-f46de0ff6e53",
+      "observed_seq": 22,
+      "occurred_at": 1789039575.95237,
+      "payload": {
+        "digest": "6ebc1f1afdd9d14b481684f45eebf5159f8574d08dfee319c1e28ffd36181ff0"
+      }
+    },
+    {
+      "event_id": "979c5244-cb4b-430b-a123-4f9ad221460d",
+      "kind": "action_verified",
+      "entity_id": "bfdd70e1-fe46-4bfe-b553-f46de0ff6e53",
+      "observed_seq": 23,
+      "occurred_at": 1789039575.9915056,
+      "payload": {
+        "digest": "6ebc1f1afdd9d14b481684f45eebf5159f8574d08dfee319c1e28ffd36181ff0",
+        "message_id": "synthetic-3"
+      }
+    },
+    {
+      "event_id": "20563418-6f55-4eb2-8241-1f7df55c43d3",
+      "kind": "introduction_completed",
+      "entity_id": "a20371bd-57a8-4496-b606-f3d2e87710ab",
+      "observed_seq": 24,
+      "occurred_at": 1789039576.0045156,
+      "payload": {
+        "action_id": "bfdd70e1-fe46-4bfe-b553-f46de0ff6e53"
+      }
+    }
+  ],
+  "actions": {
+    "7d86f44b-5e1e-4b0b-b321-344a02171e7b": {
+      "action_id": "7d86f44b-5e1e-4b0b-b321-344a02171e7b",
+      "kind": "invite",
+      "pursuit_id": "096a5f80-98ef-4659-9268-9a19dbd8723e",
+      "intro_id": null,
+      "created_at": 1789039574.702816,
+      "status": "verified",
+      "frozen": {
+        "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+        "connection_generation": 1,
+        "provider_account_id": "synthetic-wa",
+        "self_provider_id": "15550001001@s.whatsapp.net",
+        "principal_binding_revision": 1,
+        "principal_provider_id": "15550001002@s.whatsapp.net",
+        "recipients": [
+          "15550001003@s.whatsapp.net"
+        ],
+        "chat_id": null,
+        "group_subject": null,
+        "text": "Hi Maya, I'm Chris, an AI assistant working with Alex. Your distribution work looked relevant. Would you like a WhatsApp introduction in a group with Alex and me? You would both see each other's number.",
+        "purpose": "invite",
+        "brief_revision": 1,
+        "research_revision": 1,
+        "pursuit_revision": 2,
+        "authority_revision": 2,
+        "permission_ids": [
+          "fe276a20-38f8-45c6-a3c6-39ffdc07d7d0"
+        ],
+        "source_claim_ids": [
+          "role"
+        ],
+        "history_watermark": 0,
+        "review_chat_id": null,
+        "not_before": 1789039574.702816,
+        "expires_at": 1789125974.702816,
+        "question_scope": {
+          "principal_id": "15550001002@s.whatsapp.net",
+          "introduction": true,
+          "group": true,
+          "number_visibility": true,
+          "pending_question_count": 1
+        }
+      },
+      "digest": "d3467a3dc86766bc4c2b0f879e102de3928974fd915caa403a25b21d0cbb1580",
+      "dispatch_generation": 1,
+      "attempts": 1,
+      "question_scope": {
+        "principal_id": "15550001002@s.whatsapp.net",
+        "group": true,
+        "number_visibility": true
+      },
+      "started_at": 1789039574.7183783,
+      "preflight": {
+        "account_id": "synthetic-wa",
+        "self_provider_id": "15550001001@s.whatsapp.net",
+        "history_ready": true,
+        "membership_verified": true,
+        "recipients": [
+          "15550001003@s.whatsapp.net"
+        ],
+        "stop": false,
+        "manual": false,
+        "pending_inbound": false,
+        "message_ids": []
+      },
+      "outbound_day": "2026-09-10",
+      "provider_response_ref": "02ce74e8cbfb7623a59463abdb770e21daccf973da898ddaf061383573ec67bc",
+      "provider_message_id": "synthetic-1",
+      "provider_chat_id": "synthetic-direct",
+      "reconcile_attempts": 1,
+      "verified_at": 1789039574.7513895,
+      "receipt": {
+        "account_id": "synthetic-wa",
+        "self_provider_id": "15550001001@s.whatsapp.net",
+        "sender_id": "15550001001@s.whatsapp.net",
+        "text": "Hi Maya, I'm Chris, an AI assistant working with Alex. Your distribution work looked relevant. Would you like a WhatsApp introduction in a group with Alex and me? You would both see each other's number.",
+        "recipients": [
+          "15550001003@s.whatsapp.net"
+        ],
+        "timestamp": 1789039574.7320192,
+        "message_id": "synthetic-1",
+        "chat_id": "synthetic-direct",
+        "membership_verified": true
+      },
+      "last_error_code": null
+    },
+    "79b4d5e1-9192-4877-8796-4a26b4195cd1": {
+      "action_id": "79b4d5e1-9192-4877-8796-4a26b4195cd1",
+      "kind": "group_create",
+      "pursuit_id": "096a5f80-98ef-4659-9268-9a19dbd8723e",
+      "intro_id": "a20371bd-57a8-4496-b606-f3d2e87710ab",
+      "created_at": 1789039575.8601193,
+      "status": "verified",
+      "frozen": {
+        "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+        "connection_generation": 1,
+        "provider_account_id": "synthetic-wa",
+        "self_provider_id": "15550001001@s.whatsapp.net",
+        "principal_binding_revision": 1,
+        "principal_provider_id": "15550001002@s.whatsapp.net",
+        "recipients": [
+          "15550001002@s.whatsapp.net",
+          "15550001003@s.whatsapp.net"
+        ],
+        "chat_id": null,
+        "group_subject": "Alex, Maya - Introduction",
+        "text": "I've created this group for the introduction you agreed to. I'll add the introduction shortly.",
+        "purpose": "group_create",
+        "brief_revision": 1,
+        "research_revision": 1,
+        "pursuit_revision": 7,
+        "authority_revision": 2,
+        "permission_ids": [
+          "fe276a20-38f8-45c6-a3c6-39ffdc07d7d0",
+          "fea2c721-8a68-4175-98e7-97ea1af05b59",
+          "e00acf77-81a1-49dc-bf24-5225c804c10f"
+        ],
+        "source_claim_ids": [],
+        "history_watermark": 19,
+        "review_chat_id": "synthetic-direct",
+        "not_before": 1789039575.8601193,
+        "expires_at": 1789125975.8601193
+      },
+      "digest": "d558a2751fc0efb9720b5c91529be2d368da0d2559a3d85f7772ae917f93aef7",
+      "dispatch_generation": 1,
+      "attempts": 1,
+      "started_at": 1789039575.8766491,
+      "preflight": {
+        "account_id": "synthetic-wa",
+        "self_provider_id": "15550001001@s.whatsapp.net",
+        "history_ready": true,
+        "membership_verified": true,
+        "recipients": [
+          "15550001002@s.whatsapp.net",
+          "15550001003@s.whatsapp.net"
+        ],
+        "stop": false,
+        "manual": false,
+        "pending_inbound": false,
+        "message_ids": [
+          "synthetic-1"
+        ]
+      },
+      "outbound_day": "2026-09-10",
+      "provider_response_ref": "e93d482e825ea85c2f3115c10ec945d12ef2579882aa622fa42e0c07bf30682a",
+      "provider_message_id": "synthetic-2",
+      "provider_chat_id": "synthetic-group",
+      "reconcile_attempts": 1,
+      "verified_at": 1789039575.9251134,
+      "receipt": {
+        "account_id": "synthetic-wa",
+        "self_provider_id": "15550001001@s.whatsapp.net",
+        "sender_id": "15550001001@s.whatsapp.net",
+        "text": "I've created this group for the introduction you agreed to. I'll add the introduction shortly.",
+        "recipients": [
+          "15550001002@s.whatsapp.net",
+          "15550001003@s.whatsapp.net"
+        ],
+        "timestamp": 1789039575.8953302,
+        "message_id": "synthetic-2",
+        "chat_id": "synthetic-group",
+        "membership_verified": true
+      },
+      "last_error_code": null
+    },
+    "bfdd70e1-fe46-4bfe-b553-f46de0ff6e53": {
+      "action_id": "bfdd70e1-fe46-4bfe-b553-f46de0ff6e53",
+      "kind": "group_introduction",
+      "pursuit_id": "096a5f80-98ef-4659-9268-9a19dbd8723e",
+      "intro_id": "a20371bd-57a8-4496-b606-f3d2e87710ab",
+      "created_at": 1789039575.9388664,
+      "status": "verified",
+      "frozen": {
+        "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+        "connection_generation": 1,
+        "provider_account_id": "synthetic-wa",
+        "self_provider_id": "15550001001@s.whatsapp.net",
+        "principal_binding_revision": 1,
+        "principal_provider_id": "15550001002@s.whatsapp.net",
+        "recipients": [
+          "15550001002@s.whatsapp.net",
+          "15550001003@s.whatsapp.net"
+        ],
+        "chat_id": "synthetic-group",
+        "group_subject": null,
+        "text": "Alex, meet Maya, who leads Cedar Distribution. Maya, Alex builds software for distributors. A distribution partnership may be worth exploring. You both agreed to this introduction, so I will leave you to take it from here.",
+        "purpose": "group_introduction",
+        "brief_revision": 1,
+        "research_revision": 1,
+        "pursuit_revision": 7,
+        "authority_revision": 2,
+        "permission_ids": [
+          "fe276a20-38f8-45c6-a3c6-39ffdc07d7d0",
+          "fea2c721-8a68-4175-98e7-97ea1af05b59",
+          "e00acf77-81a1-49dc-bf24-5225c804c10f"
+        ],
+        "source_claim_ids": [],
+        "history_watermark": 19,
+        "review_chat_id": "synthetic-direct",
+        "not_before": 1789039575.9388664,
+        "expires_at": 1789125975.9388664
+      },
+      "digest": "6ebc1f1afdd9d14b481684f45eebf5159f8574d08dfee319c1e28ffd36181ff0",
+      "dispatch_generation": 1,
+      "attempts": 1,
+      "started_at": 1789039575.95237,
+      "preflight": {
+        "account_id": "synthetic-wa",
+        "self_provider_id": "15550001001@s.whatsapp.net",
+        "history_ready": true,
+        "membership_verified": true,
+        "recipients": [
+          "15550001002@s.whatsapp.net",
+          "15550001003@s.whatsapp.net"
+        ],
+        "stop": false,
+        "manual": false,
+        "pending_inbound": false,
+        "message_ids": [
+          "synthetic-1",
+          "synthetic-2"
+        ]
+      },
+      "outbound_day": "2026-09-10",
+      "provider_response_ref": "b28d7a90be8cd4dbb4e765c236b802ec704e6f1c139de8a899469095d3667bee",
+      "provider_message_id": "synthetic-3",
+      "provider_chat_id": "synthetic-group",
+      "reconcile_attempts": 1,
+      "verified_at": 1789039575.9915056,
+      "receipt": {
+        "account_id": "synthetic-wa",
+        "self_provider_id": "15550001001@s.whatsapp.net",
+        "sender_id": "15550001001@s.whatsapp.net",
+        "text": "Alex, meet Maya, who leads Cedar Distribution. Maya, Alex builds software for distributors. A distribution partnership may be worth exploring. You both agreed to this introduction, so I will leave you to take it from here.",
+        "recipients": [
+          "15550001002@s.whatsapp.net",
+          "15550001003@s.whatsapp.net"
+        ],
+        "timestamp": 1789039575.961802,
+        "message_id": "synthetic-3",
+        "chat_id": "synthetic-group",
+        "membership_verified": true
+      },
+      "last_error_code": null
+    }
+  },
+  "projections": {
+    "c47bbb7e-6fc5-5867-9b2d-b874d89e0198": {
+      "projection_id": "c47bbb7e-6fc5-5867-9b2d-b874d89e0198",
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "source_event_id": "9b824954-a19e-4be4-b298-119e59580cfa",
+      "kind": "contact",
+      "payload": {
+        "person_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+        "display_name": "Maya Chen",
+        "company_name": "Cedar Distribution",
+        "identity_status": "operator_attested",
+        "phone_e164": "+15550001003",
+        "synthetic": true
+      },
+      "payload_digest": "b69cbe504288d467c1bc494ee544c567dedb6cede34629fc82129a765f754605",
+      "status": "acknowledged",
+      "attempts": 1,
+      "next_attempt_at": 1789039706.6861343,
+      "contact_creation_claimed": true,
+      "acknowledged_at": 1789039646.5408137,
+      "result": "written"
+    },
+    "7a34e3a3-5c6e-5222-be2b-92fda608d6c2": {
+      "projection_id": "7a34e3a3-5c6e-5222-be2b-92fda608d6c2",
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "source_event_id": "9b824954-a19e-4be4-b298-119e59580cfa",
+      "kind": "dossier_note",
+      "payload": {
+        "person_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+        "summary": "Direct relevance to distribution, with recipient benefit still unknown.",
+        "dossier_ref": "17a5f991fc830720296cdb4b232cd022d60509bd2e7bcc4accefda066f9b6afc",
+        "phone_e164": "+15550001003",
+        "synthetic": true
+      },
+      "payload_digest": "a64ea34c98e3e8f3e2ef39ea6493996803a6a698f3842383cd4d10d6fccf311a",
+      "status": "acknowledged",
+      "attempts": 1,
+      "next_attempt_at": 1789039706.6861343,
+      "acknowledged_at": 1789039646.5694327,
+      "result": "written"
+    },
+    "2048aaa8-bd9a-5401-8927-ea9b6de73db3": {
+      "projection_id": "2048aaa8-bd9a-5401-8927-ea9b6de73db3",
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "source_event_id": "92250351-7255-4fc8-ab37-4623b2fbc085",
+      "kind": "direct_messages",
+      "payload": {
+        "person_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+        "messages": [
+          {
+            "id": "synthetic-1",
+            "text": "Hi Maya, I'm Chris, an AI assistant working with Alex. Your distribution work looked relevant. Would you like a WhatsApp introduction in a group with Alex and me? You would both see each other's number.",
+            "direction": "outbound",
+            "occurred_at": "2026-09-10T11:26:14.732019+00:00",
+            "chat_id": "synthetic-direct"
+          }
+        ],
+        "phone_e164": "+15550001003",
+        "synthetic": true
+      },
+      "payload_digest": "5c3b6a0a7918a2d595d2db19b07b4bcce2428adbb34ff2cfa42c82500af8e75e",
+      "status": "acknowledged",
+      "attempts": 1,
+      "next_attempt_at": 1789039706.6861343,
+      "acknowledged_at": 1789039646.6081624,
+      "result": "written"
+    },
+    "60287ba8-8c69-5266-8760-5b3f103c3799": {
+      "projection_id": "60287ba8-8c69-5266-8760-5b3f103c3799",
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "source_event_id": "ea1da8ec-c7e4-49e2-af03-cb88624f49d2",
+      "kind": "direct_messages",
+      "payload": {
+        "person_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+        "messages": [
+          {
+            "id": "qa-consent",
+            "text": "Yes please",
+            "direction": "inbound",
+            "occurred_at": "2026-09-10T11:26:15.300755+00:00",
+            "chat_id": "synthetic-direct"
+          }
+        ],
+        "phone_e164": "+15550001003",
+        "synthetic": true
+      },
+      "payload_digest": "e7999427f076995ea7b2e357dc4b8802f90e1a6a4c3771c2185e9de64c9f4f60",
+      "status": "acknowledged",
+      "attempts": 1,
+      "next_attempt_at": 1789039706.6861343,
+      "acknowledged_at": 1789039646.6440036,
+      "result": "written"
+    },
+    "0b642035-d85f-57a8-9a97-7e10685c0f56": {
+      "projection_id": "0b642035-d85f-57a8-9a97-7e10685c0f56",
+      "account_id": "e89ab10e-a785-4ca3-a591-9d3c1b3c4b5d",
+      "source_event_id": "20563418-6f55-4eb2-8241-1f7df55c43d3",
+      "kind": "introduction_note",
+      "payload": {
+        "person_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+        "introduction_id": "a20371bd-57a8-4496-b606-f3d2e87710ab",
+        "observed_at": 1789039576.0045156,
+        "phone_e164": "+15550001003",
+        "synthetic": true
+      },
+      "payload_digest": "91106d622e96623f71da37d4e2b6f7b2b693399a38e6b64d6ffedbb5838ace2a",
+      "status": "acknowledged",
+      "attempts": 1,
+      "next_attempt_at": 1789039706.6861343,
+      "acknowledged_at": 1789039646.6709783,
+      "result": "written"
+    }
+  },
+  "tool_runs": {
+    "8fe8f961-6040-4235-94f3-f90e3d1a8dab": {
+      "run_id": "8fe8f961-6040-4235-94f3-f90e3d1a8dab",
+      "tool_name": "model",
+      "input_digest": "feb40d3e209a2977f18eaac2c0701c24e7e2119331edb0d590803948b51684df",
+      "normalized_input": {
+        "task_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+        "turn": 0
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": null,
+      "started_at": 1789039573.5694613,
+      "output_ref": "fa5476569bff07cc3439b56995978a67ccc90329e75a965f94324738d03efbfa",
+      "completed_at": 1789039573.5910003
+    },
+    "cc9205cf-0602-4d0b-9ac1-f5d6263e0047": {
+      "run_id": "cc9205cf-0602-4d0b-9ac1-f5d6263e0047",
+      "tool_name": "search_web",
+      "input_digest": "98c6b0076f8005a6f24d9cc93a8b992a923a1395df8ef061fb46494874e9e339",
+      "normalized_input": {
+        "query": "Find specialist expertise for a public distribution software project. leaders",
+        "purpose": "discovery"
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": 1000,
+      "started_at": 1789039573.6023622,
+      "output_ref": "b5895173f4bc49d0562ba86ed140ed464e0b7d4938172f9a31d5c9ea0c98fe7d",
+      "completed_at": 1789039573.6195884
+    },
+    "b1d90126-7850-49f8-b0a1-e9082b84a8d4": {
+      "run_id": "b1d90126-7850-49f8-b0a1-e9082b84a8d4",
+      "tool_name": "model",
+      "input_digest": "b319d77fe5b1b310413a1fdb3cd2de1a51d0ec3035fc8737ce843cf384627c7c",
+      "normalized_input": {
+        "task_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+        "turn": 1
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": null,
+      "started_at": 1789039573.6691017,
+      "output_ref": "06bc6fc21edf958207d5d2bb7ef947e584ced5ded2df04c9828e5cd7c3a6acdc",
+      "completed_at": 1789039573.6876857
+    },
+    "09d1aa91-9add-4c4d-9a8f-d58909cf4f02": {
+      "run_id": "09d1aa91-9add-4c4d-9a8f-d58909cf4f02",
+      "tool_name": "read_url",
+      "input_digest": "5b01df3ffe8beb478555c72c622921fe80221fe26df44ebfa1d69c3aabbdadce",
+      "normalized_input": {
+        "source_id": "6f2119c6-eb54-484d-bbe7-d612c4cc6265",
+        "question": "Who leads the business?"
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": 1000,
+      "started_at": 1789039573.7028835,
+      "output_ref": "a0ec83c1d72d687d3765362d8beb72c37f765e3fe1f08c2aff700ab629d2c7d4",
+      "completed_at": 1789039573.7269988
+    },
+    "02f7fc23-177b-4f1f-b0be-9a36ea9b6504": {
+      "run_id": "02f7fc23-177b-4f1f-b0be-9a36ea9b6504",
+      "tool_name": "model",
+      "input_digest": "07048c6b24bbdaa2c34ccb329b002e391c9588c0be164800b73fd5978ef59858",
+      "normalized_input": {
+        "task_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+        "turn": 2
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": null,
+      "started_at": 1789039573.782204,
+      "output_ref": "0ef2af80f2974bbadf20b40dc73060193cc0d207e4cc19ee1771bfa2c1164a93",
+      "completed_at": 1789039573.8050911
+    },
+    "3c80d20a-3cc7-4114-a56f-447820538a17": {
+      "run_id": "3c80d20a-3cc7-4114-a56f-447820538a17",
+      "tool_name": "model",
+      "input_digest": "bff281b40af77691f7a542e10cd42a09ec7385bb2894091690686924985be9bb",
+      "normalized_input": {
+        "task_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+        "turn": 3
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": null,
+      "started_at": 1789039573.8503838,
+      "output_ref": "83fe9cd362ae91538f7b705dfd01c02c9f52cf7408fcf6ff05f10932d15a06f9",
+      "completed_at": 1789039573.8698084
+    },
+    "dbf8f1c7-02e1-4082-890c-d3445c8e02d1": {
+      "run_id": "dbf8f1c7-02e1-4082-890c-d3445c8e02d1",
+      "tool_name": "model",
+      "input_digest": "ce577a4c829d740cb8353013503dcfdf03ecb8efc99be1304812df767610a180",
+      "normalized_input": {
+        "task_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+        "turn": 4
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": null,
+      "started_at": 1789039573.911888,
+      "output_ref": "62e3d276d9127ff1f0180ec06b1a5f7dfc0d3b94c105937dbe35fcc5e8676bee",
+      "completed_at": 1789039573.9314892
+    },
+    "b0d9b79e-f11e-4f22-a21c-854400d9d6a7": {
+      "run_id": "b0d9b79e-f11e-4f22-a21c-854400d9d6a7",
+      "tool_name": "model",
+      "input_digest": "947a91196088b723f77d6d665403e8b7ee08b396e379aa85c4254720128e4d94",
+      "normalized_input": {
+        "task_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+        "turn": 5
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": null,
+      "started_at": 1789039573.9908454,
+      "output_ref": "62b645a71070ff298166a959256acb4260b76926921e7d75f28efdfa3895d5d9",
+      "completed_at": 1789039574.0088775
+    },
+    "fca7a8d0-5bfc-4210-baf9-5f1edb91eed5": {
+      "run_id": "fca7a8d0-5bfc-4210-baf9-5f1edb91eed5",
+      "tool_name": "research_critic",
+      "input_digest": "7f929e40a169977499938c0e41231a3df31d1ea06b6d65f69c45c8cc60f95a91",
+      "normalized_input": {
+        "person_id": "19c2fa49-a5b3-4901-88ef-6e38bcd955db",
+        "dossier_ref": "17a5f991fc830720296cdb4b232cd022d60509bd2e7bcc4accefda066f9b6afc"
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": null,
+      "started_at": 1789039574.023389,
+      "output_ref": "f9f05a1b8714bbe57bc48dcfdb8a177060be9426d45e5e9c3355ee0b63164e2e",
+      "completed_at": 1789039574.0445054
+    },
+    "a6c44dfa-4d3d-4ffc-9976-b880c19ea617": {
+      "run_id": "a6c44dfa-4d3d-4ffc-9976-b880c19ea617",
+      "tool_name": "model",
+      "input_digest": "8ac397a6c66c3f5000435cbacb14fcc9a402b832966e4c5497c209eda5724b4e",
+      "normalized_input": {
+        "task_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+        "turn": 6
+      },
+      "status": "completed",
+      "job_id": "9ec33f8b-42ae-4346-8004-0af6d5b875c7",
+      "research_revision": 1,
+      "cost_reservation_micro_usd": 100000,
+      "reported_cost_micro_usd": null,
+      "estimated_cost_micro_usd": null,
+      "started_at": 1789039574.0878723,
+      "output_ref": "3d4211a58b8d36185cc54423e3b344b8e91f0f0bd6e4b0faa0071390ad5ac51d",
+      "completed_at": 1789039574.1057096
+    }
+  },
+  "wire_receipts": [
+    {
+      "account_id": "synthetic-wa",
+      "self_provider_id": "15550001001@s.whatsapp.net",
+      "sender_id": "15550001001@s.whatsapp.net",
+      "text": "Hi Maya, I'm Chris, an AI assistant working with Alex. Your distribution work looked relevant. Would you like a WhatsApp introduction in a group with Alex and me? You would both see each other's number.",
+      "recipients": [
+        "15550001003@s.whatsapp.net"
+      ],
+      "timestamp": 1789039574.7320192,
+      "message_id": "synthetic-1",
+      "chat_id": "synthetic-direct",
+      "membership_verified": true
+    },
+    {
+      "account_id": "synthetic-wa",
+      "self_provider_id": "15550001001@s.whatsapp.net",
+      "sender_id": "15550001001@s.whatsapp.net",
+      "text": "I've created this group for the introduction you agreed to. I'll add the introduction shortly.",
+      "recipients": [
+        "15550001002@s.whatsapp.net",
+        "15550001003@s.whatsapp.net"
+      ],
+      "timestamp": 1789039575.8953302,
+      "message_id": "synthetic-2",
+      "chat_id": "synthetic-group",
+      "membership_verified": true
+    },
+    {
+      "account_id": "synthetic-wa",
+      "self_provider_id": "15550001001@s.whatsapp.net",
+      "sender_id": "15550001001@s.whatsapp.net",
+      "text": "Alex, meet Maya, who leads Cedar Distribution. Maya, Alex builds software for distributors. A distribution partnership may be worth exploring. You both agreed to this introduction, so I will leave you to take it from here.",
+      "recipients": [
+        "15550001002@s.whatsapp.net",
+        "15550001003@s.whatsapp.net"
+      ],
+      "timestamp": 1789039575.961802,
+      "message_id": "synthetic-3",
+      "chat_id": "synthetic-group",
+      "membership_verified": true
+    }
+  ]
+}

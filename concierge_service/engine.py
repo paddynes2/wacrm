@@ -89,7 +89,7 @@ class Engine:
                    (jid, doc["account_id"], key, kind, encode(payload), self.now(doc) + delay))
 
     def cancel(self, db, doc, pid=None):
-        rows = db.execute("SELECT id,payload FROM jobs WHERE account=? AND state IN ('queued','running')", (doc["account_id"],)).fetchall()
+        rows = db.execute("SELECT id,payload FROM jobs WHERE account=? AND kind NOT LIKE 'chris.%' AND state IN ('queued','running')", (doc["account_id"],)).fetchall()
         for row in rows:
             if pid is None or json.loads(row["payload"]).get("prospect_id") == pid:
                 db.execute("UPDATE jobs SET state='cancelled',lease_until=NULL WHERE id=?", (row["id"],))
@@ -100,7 +100,7 @@ class Engine:
     def report(self, account):
         with self.store.transaction() as db:
             doc = self.store.load(db, account, self.mode)
-            jobs = [dict(r) for r in db.execute("SELECT id,kind,state,due,attempts,error FROM jobs WHERE account=? ORDER BY due DESC LIMIT 100", (account,))]
+            jobs = [dict(r) for r in db.execute("SELECT id,kind,state,due,attempts,error FROM jobs WHERE account=? AND kind NOT LIKE 'chris.%' ORDER BY due DESC LIMIT 100", (account,))]
             return self.present(doc, jobs)
 
     def present(self, doc, jobs):
@@ -184,7 +184,7 @@ class Engine:
             if name == "save_brief":
                 self.save_brief(db, doc, body.get("brief"))
             elif name == "retry_job":
-                row = db.execute("SELECT * FROM jobs WHERE id=? AND account=?", (body.get("job_id"), account)).fetchone()
+                row = db.execute("SELECT * FROM jobs WHERE id=? AND account=? AND kind NOT LIKE 'chris.%'", (body.get("job_id"), account)).fetchone()
                 if not row or row["state"] not in {"failed", "cancelled"} or doc["paused"]:
                     raise ValueError("Retry requires a failed/cancelled job and active workspace")
                 payload = json.loads(row["payload"])
@@ -943,7 +943,7 @@ class Engine:
             if doc["paused"]:
                 return
             now = self.now(doc)
-            row = db.execute("SELECT * FROM jobs WHERE account=? AND ((state='queued' AND due<=?) OR (state='running' AND lease_until<=?)) ORDER BY due LIMIT 1", (account, now, time.time())).fetchone()
+            row = db.execute("SELECT * FROM jobs WHERE account=? AND kind NOT LIKE 'chris.%' AND ((state='queued' AND due<=?) OR (state='running' AND lease_until<=?)) ORDER BY due LIMIT 1", (account, now, time.time())).fetchone()
             if row is None:
                 return
             job = dict(row)

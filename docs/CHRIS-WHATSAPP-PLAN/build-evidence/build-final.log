@@ -1,0 +1,141 @@
+
+> wacrm@0.8.0 build
+> next build
+
+▲ Next.js 16.2.12 (Turbopack)
+
+node.exe : ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (⚠ The "middlewa...leware-to-proxy:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.1s
+  Running TypeScript ...
+  Finished TypeScript in 10.8s ...
+  Collecting page data using 15 workers ...
+⚠ Using edge runtime on a page currently disables static generation for that page
+  Generating static pages using 15 workers (0/75) ...
+  Generating static pages using 15 workers (18/75)
+  Generating static pages using 15 workers (37/75)
+  Generating static pages using 15 workers (56/75)
+✓ Generating static pages using 15 workers (75/75) in 633ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /agents
+├ ƒ /api/account
+├ ƒ /api/account/api-keys
+├ ƒ /api/account/api-keys/[id]
+├ ƒ /api/account/invitations
+├ ƒ /api/account/invitations/[id]
+├ ƒ /api/account/members
+├ ƒ /api/account/members/[userId]
+├ ƒ /api/account/transfer-ownership
+├ ƒ /api/ai/autoreply/[conversationId]
+├ ƒ /api/ai/config
+├ ƒ /api/ai/draft
+├ ƒ /api/ai/knowledge
+├ ƒ /api/ai/knowledge/[id]
+├ ƒ /api/ai/knowledge/reindex
+├ ƒ /api/ai/playground
+├ ƒ /api/ai/test
+├ ƒ /api/ai/usage
+├ ƒ /api/automations
+├ ƒ /api/automations/[id]
+├ ƒ /api/automations/[id]/duplicate
+├ ƒ /api/automations/cron
+├ ƒ /api/automations/engine
+├ ƒ /api/chris
+├ ƒ /api/chris/activity
+├ ƒ /api/chris/commands
+├ ƒ /api/chris/commands/[id]
+├ ƒ /api/chris/export
+├ ƒ /api/chris/introductions
+├ ƒ /api/chris/introductions/[id]
+├ ƒ /api/chris/people
+├ ƒ /api/chris/people/[id]
+├ ƒ /api/concierge
+├ ƒ /api/concierge/dogfood
+├ ƒ /api/concierge/draft
+├ ƒ /api/concierge/operations
+├ ƒ /api/concierge/prospects
+├ ƒ /api/concierge/readiness
+├ ƒ /api/concierge/reconcile
+├ ƒ /api/contacts/[id]/tags
+├ ƒ /api/flows
+├ ƒ /api/flows/[id]
+├ ƒ /api/flows/[id]/activate
+├ ƒ /api/flows/[id]/runs
+├ ƒ /api/flows/cron
+├ ƒ /api/flows/templates
+├ ƒ /api/internal/chris/projection
+├ ƒ /api/internal/chris/relationship
+├ ƒ /api/invitations/[token]/peek
+├ ƒ /api/invitations/[token]/redeem
+├ ƒ /api/quick-replies
+├ ƒ /api/quick-replies/[id]
+├ ƒ /api/v1/broadcasts
+├ ƒ /api/v1/broadcasts/[id]
+├ ƒ /api/v1/contacts
+├ ƒ /api/v1/contacts/[id]
+├ ƒ /api/v1/conversations
+├ ƒ /api/v1/conversations/[id]
+├ ƒ /api/v1/conversations/[id]/messages
+├ ƒ /api/v1/me
+├ ƒ /api/v1/messages
+├ ƒ /api/v1/webhooks
+├ ƒ /api/v1/webhooks/[id]
+├ ƒ /api/whatsapp/broadcast
+├ ƒ /api/whatsapp/broadcast/[id]/resume
+├ ƒ /api/whatsapp/config
+├ ƒ /api/whatsapp/config/verify-registration
+├ ƒ /api/whatsapp/media/[mediaId]
+├ ƒ /api/whatsapp/react
+├ ƒ /api/whatsapp/send
+├ ƒ /api/whatsapp/templates/[id]
+├ ƒ /api/whatsapp/templates/submit
+├ ƒ /api/whatsapp/templates/sync
+├ ƒ /api/whatsapp/webhook
+├ ○ /automations
+├ ƒ /automations/[id]/edit
+├ ƒ /automations/[id]/logs
+├ ○ /automations/new
+├ ○ /broadcasts
+├ ƒ /broadcasts/[id]
+├ ○ /broadcasts/new
+├ ○ /chris
+├ ○ /chris/introductions
+├ ƒ /chris/introductions/[introductionId]
+├ ○ /chris/people
+├ ƒ /chris/people/[personId]
+├ ○ /chris/settings
+├ ○ /concierge
+├ ○ /connections
+├ ○ /contacts
+├ ○ /dashboard
+├ ○ /dogfood
+├ ○ /flows
+├ ƒ /flows/[id]
+├ ƒ /flows/[id]/runs
+├ ○ /forgot-password
+├ ƒ /icon
+├ ○ /inbox
+├ ƒ /join/[token]
+├ ○ /login
+├ ○ /notifications
+├ ○ /operations
+├ ○ /pipelines
+├ ○ /prospects
+├ ○ /settings
+└ ○ /signup
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
