@@ -8,6 +8,38 @@ Verified implementation results: 421 Python tests, 1,018 TypeScript tests, typec
 
 ## 1. Start a fresh offline workspace
 
+### Existing local session on Patrick's machine
+
+Last verified **10 September 2026, 12:42 UTC**: both local servers were running, and the login page returned HTTP 200. Open [the login page](http://127.0.0.1:18762/login), sign in with `qa@example.test` / `synthetic-password`, then open [Chris](http://127.0.0.1:18762/chris). Do not start duplicate servers while this session is running.
+
+This session uses `C:/wacrm-chris-build-20260910/.local/chris-manual/qa-demo.sqlite`. At verification it was a blank simulation workspace: no active brief, zero people or introductions, and external messaging disabled. Continue at **Give Chris an endeavour** below. The older build-verification databases are separate from this manual session.
+
+The servers were started for the user after a connection-refused report. They are local development processes, not an installed service or an automatically starting deployment. If the page later refuses a connection, follow **Reopen an existing local workspace** below. A refused connection means there is no reachable listener; it is not a password error.
+
+### Reopen an existing local workspace
+
+First inspect the listeners:
+
+```powershell
+Get-NetTCPConnection -State Listen -LocalPort 18761,18762 -ErrorAction SilentlyContinue |
+    Select-Object LocalAddress,LocalPort,OwningProcess
+```
+
+If neither port is listening, start the service in one terminal using the existing database:
+
+```powershell
+Set-Location C:/wacrm-chris-build-20260910
+$qaDatabase = Join-Path (Get-Location) '.local/chris-manual/qa-demo.sqlite'
+if (-not (Test-Path -LiteralPath $qaDatabase)) {
+    throw 'Existing workspace not found. Use the fresh-workspace instructions instead.'
+}
+& .local/venv/Scripts/python.exe -m concierge_service.tests.chris_qa_host --db $qaDatabase --port 18761
+```
+
+Then run the **terminal 2** environment/startup block below in a second terminal. If only one port is missing, investigate the process shown for the occupied port and start only the missing component after confirming it belongs to this worktree. Do not delete or reseed the existing database to restart. Reload the browser after Next reports Ready.
+
+### Create another fresh workspace
+
 Use three PowerShell terminals in `C:/wacrm-chris-build-20260910`. The installed dependencies and `.local/venv` already exist on Patrick's machine. In a fresh checkout, first run:
 
 ```powershell

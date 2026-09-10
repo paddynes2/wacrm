@@ -20,6 +20,8 @@ Optional principal WhatsApp status replies require both the separate principal-m
 
 ## Diagnosis
 
+For `ERR_CONNECTION_REFUSED` at the local login URL, check that both the web listener (18762) and synthetic private service (18761) are running. The build-verification servers were intentionally stopped at handoff; a later manual session was started for the user. Follow the dated [local session/restart guide](HOW-TO-TEST-AND-USE.md#existing-local-session-on-patricks-machine). Preserve its existing SQLite database and start only missing components; restarting does not require reinstalling dependencies or changing credentials.
+
 Run `python -m concierge_service.chris.preflight --db <absolute existing SQLite path>` for a read-only local integrity report. It does not contact providers, spend, change configuration or send messages. Code 0 means local inspection passed, 2 means no configured Chris account, 3 means local corruption/unavailability. Local success does not establish live provider acceptance.
 
 Review the overview readiness fields independently: research configuration, WhatsApp, principal, external authority, worker heartbeat, projection and storage. Missing bridge configuration gives the UI a disconnected state. Missing model/search allowance disables paid work. Provider identity changes invalidate principal/permission applicability and cancel unstarted actions. Reconnect the configured identity rather than rotating sender numbers.

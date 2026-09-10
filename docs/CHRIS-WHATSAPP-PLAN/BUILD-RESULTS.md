@@ -58,7 +58,7 @@ The final integrated replay used the real Python service and the real Next `/api
 
 The browser session was closed before the projection trigger; the service callback did not depend on a browser to perform or acknowledge CRM writes. Reopening the UI showed the verified outcome without pending CRM updates. This integration caught and fixed the missing bridge `/claim` path, which isolated projector tests had not exercised. A real bridge regression test now covers claim and acknowledgement forwarding.
 
-The final synthetic workspace was paused and messaging explicitly disabled. QA hosts used checked loopback ports 18761/18762 and have been stopped. No canonical service was stopped.
+At the end of build verification, the verification workspaces were paused and messaging explicitly disabled, and their QA servers on loopback ports 18761/18762 were stopped. No canonical service was stopped. A separate blank manual simulation was subsequently started for the user on those ports after a connection-refused report. See the dated [local session and restart instructions](HOW-TO-TEST-AND-USE.md#existing-local-session-on-patricks-machine) for the current handoff; this is not a live deployment.
 
 ## File map and operation
 

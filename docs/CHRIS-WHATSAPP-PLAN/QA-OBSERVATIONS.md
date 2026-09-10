@@ -1,5 +1,7 @@
 # Browser and integration observations
 
+Post-handoff access check, 10 September 2026 at 12:42 UTC: the user's connection-refused report was resolved by starting a separate blank manual simulation. Both loopback listeners were present, `/login` returned HTTP 200, and the private overview reported simulation mode, no brief, zero outcomes and external messaging off. The servers were left running for the user. See [the dated local session guide](HOW-TO-TEST-AND-USE.md#existing-local-session-on-patricks-machine) for login, database location and restart instructions. The build QA observations below remain historical evidence from the separate verification databases.
+
 The actual Next application ran at loopback port 18762 against the real private Chris API at 18761. Only provider/auth/CRM I/O was synthetic, using the guarded QA host. The existing WACRM login, account role lookup, pages and public routes were exercised. No production Supabase auth or RLS was altered.
 
 | Journey | Observation and evidence |
