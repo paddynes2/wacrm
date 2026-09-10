@@ -1,5 +1,7 @@
 # Test and use Chris
 
+Published branch: [paddynes2/wacrm - codex/chris-wa-build-20260910](https://github.com/paddynes2/wacrm/tree/codex/chris-wa-build-20260910). The local branch tracks the `patrick` remote; `origin` remains the upstream repository. If working on another machine, check out this branch and replace the Windows worktree path below with your checkout path.
+
 Start with the offline walkthrough below. It uses the real application and Chris service with synthetic research, WhatsApp and CRM I/O. It needs no paid keys or WhatsApp number. The implementation is on branch `codex/chris-wa-build-20260910`, commit `736af8e`; subsequent commits update the handoff documentation.
 
 Verified implementation results: 421 Python tests, 1,018 TypeScript tests, typecheck, lint, production build, desktop/mobile QA and backup/restore. See [build results](BUILD-RESULTS.md), [acceptance evidence](ACCEPTANCE-EVIDENCE.md) and [screenshots](QA-OBSERVATIONS.md). Live provider acceptance remains a separate step.

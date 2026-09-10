@@ -4,6 +4,7 @@ T00-T19 software implementation is complete in the isolated worktree. Live activ
 
 - Worktree: `C:/wacrm-chris-build-20260910`
 - Branch: `codex/chris-wa-build-20260910`
+- Published branch: [paddynes2/wacrm](https://github.com/paddynes2/wacrm/tree/codex/chris-wa-build-20260910), tracking remote `patrick`. Implementation `736af8e` and first-use documentation `06becbe` were pushed on 10 September 2026. Upstream `origin` is unchanged; no PR, merge or deployment was performed.
 - Base: `c54fde5` (the supplied plan checkout)
 - Implementation commit: `736af8e`. The follow-up documentation commit adds [testing and usage](HOW-TO-TEST-AND-USE.md).
 - Publication scope: user authorized pushing this implementation branch on 10 September 2026. No main-branch merge or deployment is authorized by that push.
