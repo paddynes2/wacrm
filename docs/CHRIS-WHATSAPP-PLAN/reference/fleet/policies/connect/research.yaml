@@ -1,0 +1,26 @@
+# research: the read-only research toolkit on tools/agent-reach (plan 33a040fc P11, D7).
+# backend: agent_reach means the connect server executes these HOST-SIDE by shelling to
+# agent_reach.py --json (absolute command path, cwd = the repo root), never through Composio;
+# every result is fenced as external evidence with a source line inside the fence. There is
+# no stage slug: research reads, it never posts (publishing is P17, design only, HR12-W).
+# limits: calls_per_turn caps a turn at 20 provider calls; max_chars bounds one read;
+# timeout_s is the per-call deadline passed to agent-reach; max_results clamps a search.
+toolkit: research
+backend: agent_reach
+default: deny
+read:
+  - RESEARCH_SEARCH_WEB          # agent_reach search <q> --platform web
+  - RESEARCH_SEARCH_X
+  - RESEARCH_SEARCH_REDDIT
+  - RESEARCH_SEARCH_GITHUB
+  - RESEARCH_SEARCH_YOUTUBE
+  - RESEARCH_SEARCH_HACKERNEWS
+  - RESEARCH_READ_URL            # agent_reach read <url>
+stage: []
+# step 7b: searches and reads are separate per-turn budgets; calls_per_turn stays as the
+# legacy TOTAL cap. A record's connector_limits may narrow (never widen) these per bot.
+limits: {calls_per_turn: 20, searches_per_turn: 20, reads_per_turn: 12, max_chars: 20000, timeout_s: 40, max_results: 10}
+# retain_evidence: the exact fenced text each call hands the brain is kept as a file under
+# FLEET_HOME/evidence/<bot>/<turn>/ (plan f132fd9d step 1). True here because these are
+# public pages; a Composio toolkit (third-party bodies) defaults to false.
+retain_evidence: true

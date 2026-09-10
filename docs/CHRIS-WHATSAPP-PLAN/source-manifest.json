@@ -1,0 +1,359 @@
+{
+    "schema_version":  1,
+    "captured_at_utc":  "2026-09-10T08:56:18.3898081Z",
+    "wacrm_source_root":  "C:/wacrm-dogfood",
+    "wacrm_documentation_commit":  "657ab228e5d3c86dfa849e3d569a953a54db5393",
+    "wacrm_executable_checkpoint":  "e4d0525",
+    "behaviour_source_root":  "C:/Users/Patrick/OS/apps/internal/agent-fleet/resources",
+    "note":  "Hashes identify reviewed bytes, not deployment status. Fleet remains under concurrent editing. No runtime dependency on reference snapshots.",
+    "files":  [
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "package.json",
+                      "original_path":  "C:\\wacrm-dogfood\\package.json",
+                      "sha256":  "cdf8367c2b2ad5b06daaa271c31eef117f6ab2dd4ab5184ca48e527f215ae283",
+                      "bytes":  2480,
+                      "last_write_utc":  "2026-09-09T03:20:19.1314644Z",
+                      "lf_sha256":  "be6682905c1de7d48137fc607c711d598dd55ce00658087cd3e4c95497531587"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "package-lock.json",
+                      "original_path":  "C:\\wacrm-dogfood\\package-lock.json",
+                      "sha256":  "214378889bbb309d91eede8558cc2f19f8d5389a26be9b91c03c2ae71f6a7a16",
+                      "bytes":  419386,
+                      "last_write_utc":  "2026-09-09T03:20:19.1305188Z",
+                      "lf_sha256":  "e5cf0f8e3dcdc5b6301fc1f9a662daf01c946d44fedc91fa3fb8356d9558face"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "AGENTS.md",
+                      "original_path":  "C:\\wacrm-dogfood\\AGENTS.md",
+                      "sha256":  "ceaa13d29db2c2ce408ba5d00fb6c5cccc0eadeb336cf076cfea699f985b9fd8",
+                      "bytes":  332,
+                      "last_write_utc":  "2026-09-09T03:20:19.1120805Z",
+                      "lf_sha256":  "e3447d84251880fb34cfae09131cb4c57471529bbfe60976a3245793cf621627"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/store.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\store.py",
+                      "sha256":  "211b286dde613e3352f473c561e01cbd2a326025e58d6cf28dd30037cd95fdac",
+                      "bytes":  3179,
+                      "last_write_utc":  "2026-09-09T03:35:52.2809389Z",
+                      "lf_sha256":  "d5c3f20ed3b0a5f1f557163817cfc4e11c4d7fa0e2ac19a0fe7bfd93be4bb722"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/api.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\api.py",
+                      "sha256":  "b848aa5271472e62c17517c4e2e5f6100534a498d6317f8dc700e8d1d5b5b01f",
+                      "bytes":  7260,
+                      "last_write_utc":  "2026-09-09T04:01:04.2056078Z",
+                      "lf_sha256":  "b848aa5271472e62c17517c4e2e5f6100534a498d6317f8dc700e8d1d5b5b01f"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/engine.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\engine.py",
+                      "sha256":  "4d40b65f49a030c9fe861e993df57ae1efa6d8447adc2cc3355c01fd530029c7",
+                      "bytes":  75979,
+                      "last_write_utc":  "2026-09-09T04:01:24.4199217Z",
+                      "lf_sha256":  "59281f77335a0ee0db500681976bea23eda96123bf0eec9b6d93bace656df423"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/host.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\host.py",
+                      "sha256":  "704f651d343a01ddd94730caff1f63f8b89f07922e26f2491df900093b3759c2",
+                      "bytes":  2192,
+                      "last_write_utc":  "2026-09-09T04:04:52.3608839Z",
+                      "lf_sha256":  "704f651d343a01ddd94730caff1f63f8b89f07922e26f2491df900093b3759c2"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/providers.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\providers.py",
+                      "sha256":  "12eebece342282fc08bbecf15f929757bd338bf09811be7f4abc236f43ad67c9",
+                      "bytes":  21341,
+                      "last_write_utc":  "2026-09-09T03:44:16.5649231Z",
+                      "lf_sha256":  "86898405d901ee8018f3c96d07e78d8bc0cdab4c4181c6cd907cc0b1a4839cb0"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/research.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\research.py",
+                      "sha256":  "367e5d65a7bfed895456d0f73c69aa56769ce59f0e736cf6057606bb36613637",
+                      "bytes":  6467,
+                      "last_write_utc":  "2026-09-09T03:44:16.9890142Z",
+                      "lf_sha256":  "0e073be3f20164a420c69e0541988225cea35ca82ca1ca4d701519b52c19d274"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/enrichment.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\enrichment.py",
+                      "sha256":  "8beb1d26032c76efce4af152fba01ba5cb1e396c09a21146c0ebc41ccb713abf",
+                      "bytes":  5674,
+                      "last_write_utc":  "2026-09-09T03:40:06.8601334Z",
+                      "lf_sha256":  "c60f1497049071c67c030879661876e906178fd6b923d6d7ff8e0210d356fe60"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/ingestion.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\ingestion.py",
+                      "sha256":  "bfe9d605e42382b28eb690d8e6f22be08abf47fffce8930c6a9455373b860645",
+                      "bytes":  10561,
+                      "last_write_utc":  "2026-09-09T03:38:58.7422943Z",
+                      "lf_sha256":  "f2b8a5e86af489af1af1b2fba0c43844e8d05700d37f47cb37cb3e1ad7aa69a3"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/reviewed_transport.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\reviewed_transport.py",
+                      "sha256":  "0dfba5c9f4cdb7c4608a2c2d537bb3c0654ecd075053cf6abdc2a518353c3ce9",
+                      "bytes":  9155,
+                      "last_write_utc":  "2026-09-09T04:04:06.5470771Z",
+                      "lf_sha256":  "978f648a740fe8573a91e59bea2bfb09384e5375b4f6b5d65fa68f01f7bac208"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/live_execution.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\live_execution.py",
+                      "sha256":  "ca5c29843e2ba8e47840e7179412e736068a8aba40d54745004871f9afdb1bb5",
+                      "bytes":  10239,
+                      "last_write_utc":  "2026-09-09T04:00:37.4547931Z",
+                      "lf_sha256":  "ffda392c1aef044861f0778cd492474dc44810d37609629c377e6dbdcba76b38"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/requirements.txt",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\requirements.txt",
+                      "sha256":  "4b838478fac50f282284a607d1adcc8878203956ecf1d79b055c0e87410a1840",
+                      "bytes":  21,
+                      "last_write_utc":  "2026-09-09T03:57:32.2532228Z",
+                      "lf_sha256":  "4b838478fac50f282284a607d1adcc8878203956ecf1d79b055c0e87410a1840"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/requirements.lock",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\requirements.lock",
+                      "sha256":  "9ab8c970af69e19905cf4113eb2387cfab62793938a0806cce34feb974c0ff15",
+                      "bytes":  372,
+                      "last_write_utc":  "2026-09-09T03:57:32.2511281Z",
+                      "lf_sha256":  "9ab8c970af69e19905cf4113eb2387cfab62793938a0806cce34feb974c0ff15"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "concierge_service/concierge_core/state.py",
+                      "original_path":  "C:\\wacrm-dogfood\\concierge_service\\concierge_core\\state.py",
+                      "sha256":  "4d5d8f854aed933b0e88af3cc3f2b5cf66a7c8c7d832d10b7723081d48ea7382",
+                      "bytes":  14110,
+                      "last_write_utc":  "2026-09-09T03:27:37.6710084Z",
+                      "lf_sha256":  "d5cdef4d0678c4932c793c10f7fda2ec81f782094a7d191e77080e1c3a6d58b9"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/app/api/concierge/dogfood/route.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\app\\api\\concierge\\dogfood\\route.ts",
+                      "sha256":  "d59d4a9566d754ba7e7baaab61edfc1986e274bc7da6ba5f626f4f3831bb53f8",
+                      "bytes":  7752,
+                      "last_write_utc":  "2026-09-09T03:47:11.2605678Z",
+                      "lf_sha256":  "76032b9e498cfa3ef928c9828278335f7a9ac5cd5fde7949155f6f6475ab2632"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/lib/concierge/dogfood.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\lib\\concierge\\dogfood.ts",
+                      "sha256":  "bdc9b3d3ec7bbfda3de73f1dfb78cfe81b26beceae0b7ea9f27d3904f39a1454",
+                      "bytes":  12732,
+                      "last_write_utc":  "2026-09-09T04:06:13.0020670Z",
+                      "lf_sha256":  "7e57db8cc743882f35298dd93cd793875ecabdc684a4823b54ec69e1a48ec63a"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/lib/concierge/dogfood-reconcile.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\lib\\concierge\\dogfood-reconcile.ts",
+                      "sha256":  "ba7f94012d3992c1c2c6fd561b7b55dc4ea0a315b95b3b2ca02155baa5f891ef",
+                      "bytes":  9328,
+                      "last_write_utc":  "2026-09-09T03:53:09.2096396Z",
+                      "lf_sha256":  "28c8fe0efe9d70ea0a597371492554dff54b3a289156472342833eca0de012f9"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/lib/concierge/reconcile.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\lib\\concierge\\reconcile.ts",
+                      "sha256":  "eb91217710b176c3df3119ab58ab3cb79c9f3a5b4e03231258c1b9ab0e9e5bc8",
+                      "bytes":  8682,
+                      "last_write_utc":  "2026-09-09T03:20:19.3041953Z",
+                      "lf_sha256":  "f6a5b19b805ff4405d8fe843802f32ea2322b9e4ac3ca2662c565dbb4b3aa463"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/lib/concierge/inbox.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\lib\\concierge\\inbox.ts",
+                      "sha256":  "e9d94a87f345303be7d40a7843b7e57c02962ce445636f8b4d85736c87cf20f0",
+                      "bytes":  5735,
+                      "last_write_utc":  "2026-09-09T03:20:19.2994508Z",
+                      "lf_sha256":  "f538c2bc6f385f1813d2c96de03be289db4443fbc950a439ee59fcfc5722b180"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/lib/concierge/meta-outbound-guard.test.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\lib\\concierge\\meta-outbound-guard.test.ts",
+                      "sha256":  "53ab19e929d97d2d3cdfc8d3918bfb643c7b04b38469c6ae4a44c14b43115e23",
+                      "bytes":  888,
+                      "last_write_utc":  "2026-09-09T03:20:19.2999678Z",
+                      "lf_sha256":  "42cb29a228a1d52dd2af513b94e6e3ccb4f11b27d4500b92bc7241757c8585ca"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/lib/auth/account.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\lib\\auth\\account.ts",
+                      "sha256":  "677f42cc5419fce098be02ce91c5df9817634e2f6d3aaab6a9775ecb31413b14",
+                      "bytes":  7142,
+                      "last_write_utc":  "2026-09-09T03:20:19.2873999Z",
+                      "lf_sha256":  "f73f8af514f9ef6a278a9cf31e7d6698980081b4e9e2a0d658e91e1678caa3c7"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/lib/automations/admin-client.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\lib\\automations\\admin-client.ts",
+                      "sha256":  "760fbd3401fc34001de7aea42cabe5cbece49b7a35e5b80848c9dbcaa76a3276",
+                      "bytes":  529,
+                      "last_write_utc":  "2026-09-09T03:20:19.2904581Z",
+                      "lf_sha256":  "fda3605fd031483feed3e8baf0c8b3bde71ca8669cf18232ef47b0524d7ced86"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/lib/whatsapp/meta-api.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\lib\\whatsapp\\meta-api.ts",
+                      "sha256":  "2923ef1782d8da9270d9d0115f6b63a72455aadb4c502e3f374324ef4c51e38a",
+                      "bytes":  36736,
+                      "last_write_utc":  "2026-09-09T03:20:19.3326443Z",
+                      "lf_sha256":  "0c45cb46b5b8f43b91c9e86cddf066677529585dafa0c813043e9ad2dd025127"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/lib/whatsapp/send-message.ts",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\lib\\whatsapp\\send-message.ts",
+                      "sha256":  "f1431502b5f93b9b1a1e6f621d971567e498d6625f3437aa7ca72f486d5044f9",
+                      "bytes":  18606,
+                      "last_write_utc":  "2026-09-09T03:45:22.4906683Z",
+                      "lf_sha256":  "00dcff3dfe7cb34d2a1e492139f5d0f8b7c96528e3cb59044e893ac1b950d9f5"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "src/components/concierge/dogfood.tsx",
+                      "original_path":  "C:\\wacrm-dogfood\\src\\components\\concierge\\dogfood.tsx",
+                      "sha256":  "1f88bab9af51ba791d07ccc8339c27e755aeb8bcfde2d21420ef0fbc5932f85b",
+                      "bytes":  51869,
+                      "last_write_utc":  "2026-09-09T04:06:12.9983627Z",
+                      "lf_sha256":  "2db252c40dcef007245674e0c86cfac16b39b0d79d30af9d866f2e21bc14e9b0"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "supabase/migrations/022_contact_phone_dedup.sql",
+                      "original_path":  "C:\\wacrm-dogfood\\supabase\\migrations\\022_contact_phone_dedup.sql",
+                      "sha256":  "764d03288944923ba8f1c1f0a1635e1c0f8d78e1806e1abf82d9af912cfb2da5",
+                      "bytes":  5430,
+                      "last_write_utc":  "2026-09-09T03:20:19.3572885Z",
+                      "lf_sha256":  "8ec2f2f840dbc74fe60e811522619c6af0e6392610a9883ab01e8ffd045b2adf"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "supabase/migrations/036_conversation_contact_dedup.sql",
+                      "original_path":  "C:\\wacrm-dogfood\\supabase\\migrations\\036_conversation_contact_dedup.sql",
+                      "sha256":  "c59884dc9ae74bdcad942ab9e70cc06b40df0d924e74179bd48201948df2e9de",
+                      "bytes":  5626,
+                      "last_write_utc":  "2026-09-09T03:20:19.3618869Z",
+                      "lf_sha256":  "ee8bfbe3de13994c0bdf327d253b6c5f6f82480ce7d08a6f2b2a2c9e449cefcb"
+                  },
+                  {
+                      "kind":  "wacrm_source",
+                      "relative_path":  "supabase/migrations/037_webhook_broadcast_reliability.sql",
+                      "original_path":  "C:\\wacrm-dogfood\\supabase\\migrations\\037_webhook_broadcast_reliability.sql",
+                      "sha256":  "fac6a78c6da150e6b135a223c63e9fa3ba1dc9d24d45d9c9d7f24d1a3c841ddf",
+                      "bytes":  6643,
+                      "last_write_utc":  "2026-09-09T03:20:19.3618869Z",
+                      "lf_sha256":  "a01651eeab1c9d404dced5ec405aad62cb732d7c622549faca58b4c6149a60ef"
+                  },
+                  {
+                      "kind":  "fleet_behaviour_reference",
+                      "relative_path":  "company/agents/chris/AGENTS.md",
+                      "original_path":  "C:\\Users\\Patrick\\OS\\apps\\internal\\agent-fleet\\resources\\company\\agents\\chris\\AGENTS.md",
+                      "snapshot":  "reference/fleet/company/agents/chris/AGENTS.md",
+                      "sha256":  "0b27579b85fc41876d4831439c4c24bfae8f682a73c53964b7774055f955fc3c",
+                      "bytes":  12931,
+                      "last_write_utc":  "2026-09-09T18:45:06.7652103Z",
+                      "runtime_use":  "provenance only; adapted product contract in 04-CHRIS-REASONING.md",
+                      "lf_sha256":  "0fb6d660defb546bc44e77c83ca7771c23e280e927d6d54d542c5f27ff72cb54"
+                  },
+                  {
+                      "kind":  "fleet_behaviour_reference",
+                      "relative_path":  "behaviours/connector-method.md",
+                      "original_path":  "C:\\Users\\Patrick\\OS\\apps\\internal\\agent-fleet\\resources\\behaviours\\connector-method.md",
+                      "snapshot":  "reference/fleet/behaviours/connector-method.md",
+                      "sha256":  "66a2dabccf65873208a93a3cf2d4051b442aad9d21a5be6c478569552e4e745f",
+                      "bytes":  6078,
+                      "last_write_utc":  "2026-09-09T18:45:06.7632110Z",
+                      "runtime_use":  "provenance only; adapted product contract in 04-CHRIS-REASONING.md",
+                      "lf_sha256":  "dae71ecfac73b92720215e1de3a4be120ee31401aac9ec29f1eb74fa182ca408"
+                  },
+                  {
+                      "kind":  "fleet_behaviour_reference",
+                      "relative_path":  "knowledge/matching-method.md",
+                      "original_path":  "C:\\Users\\Patrick\\OS\\apps\\internal\\agent-fleet\\resources\\knowledge\\matching-method.md",
+                      "snapshot":  "reference/fleet/knowledge/matching-method.md",
+                      "sha256":  "cb7cdebef83a338189519388e76a4da0ebaa18f430cc945380406a6c32e66d46",
+                      "bytes":  4032,
+                      "last_write_utc":  "2026-09-09T18:45:06.7682150Z",
+                      "runtime_use":  "provenance only; adapted product contract in 04-CHRIS-REASONING.md",
+                      "lf_sha256":  "2d03efff3ae9a54eb14e25f8fc9384120ac48cfb58bfb4f306ac92ff35ba10e5"
+                  },
+                  {
+                      "kind":  "fleet_behaviour_reference",
+                      "relative_path":  "knowledge/introduction-orchestration.md",
+                      "original_path":  "C:\\Users\\Patrick\\OS\\apps\\internal\\agent-fleet\\resources\\knowledge\\introduction-orchestration.md",
+                      "snapshot":  "reference/fleet/knowledge/introduction-orchestration.md",
+                      "sha256":  "a9b6fe79678d782cb582955e2431b15895de8c9cb7c850e5750fd9fb3cc23cb0",
+                      "bytes":  8332,
+                      "last_write_utc":  "2026-09-09T18:45:06.7672069Z",
+                      "runtime_use":  "provenance only; adapted product contract in 04-CHRIS-REASONING.md",
+                      "lf_sha256":  "968a75204a1daa1761fe32c8937cbca76f325ac66a3d4e8ecc4baab229af36ac"
+                  },
+                  {
+                      "kind":  "fleet_behaviour_reference",
+                      "relative_path":  "knowledge/meeting-brief.md",
+                      "original_path":  "C:\\Users\\Patrick\\OS\\apps\\internal\\agent-fleet\\resources\\knowledge\\meeting-brief.md",
+                      "snapshot":  "reference/fleet/knowledge/meeting-brief.md",
+                      "sha256":  "0f467be1b0ab40de4f2f5b50b378f190fc42d3b288b173ffaa9762cf767335cf",
+                      "bytes":  3092,
+                      "last_write_utc":  "2026-09-09T18:45:06.7682150Z",
+                      "runtime_use":  "provenance only; adapted product contract in 04-CHRIS-REASONING.md",
+                      "lf_sha256":  "f588018d1b3e4123a5cc08e3eba803a0bed1ef7d57a16cc8930d3078476a9873"
+                  },
+                  {
+                      "kind":  "fleet_behaviour_reference",
+                      "relative_path":  "company/knowledge/people-dossier-format.md",
+                      "original_path":  "C:\\Users\\Patrick\\OS\\apps\\internal\\agent-fleet\\resources\\company\\knowledge\\people-dossier-format.md",
+                      "snapshot":  "reference/fleet/company/knowledge/people-dossier-format.md",
+                      "sha256":  "6d216a1ea4032b68e2aa59b968a1146c8260cd8e29531fbe04eeecaa64e383bc",
+                      "bytes":  5369,
+                      "last_write_utc":  "2026-09-09T18:45:06.7662108Z",
+                      "runtime_use":  "provenance only; adapted product contract in 04-CHRIS-REASONING.md",
+                      "lf_sha256":  "1bc274f04bbea921aedc386e988dc1712798c85d204293027f3e865fb6b5352e"
+                  },
+                  {
+                      "kind":  "fleet_behaviour_reference",
+                      "relative_path":  "policies/connect/research.yaml",
+                      "original_path":  "C:\\Users\\Patrick\\OS\\apps\\internal\\agent-fleet\\resources\\policies\\connect\\research.yaml",
+                      "snapshot":  "reference/fleet/policies/connect/research.yaml",
+                      "sha256":  "a7ab29360966cde2b87ac02bbbe3efd88c73eaf0b87c08659ef6c740bb70129d",
+                      "bytes":  1564,
+                      "last_write_utc":  "2026-08-23T18:36:32.6975759Z",
+                      "runtime_use":  "provenance only; adapted product contract in 04-CHRIS-REASONING.md",
+                      "lf_sha256":  "ee8c4ae16e1fbdf7e6701e774be136bb9b74aeb23871ae12d5e9690e482ba85d"
+                  }
+              ],
+    "line_ending_policy":  "sha256 pins original bytes; lf_sha256 additionally identifies identical text after CRLF-to-LF normalization for Windows Git worktrees. No whitespace/content normalization beyond CRLF is allowed."
+}
