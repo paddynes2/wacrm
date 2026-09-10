@@ -1,5 +1,7 @@
 # Fresh-session implementation prompt
 
+> Implementation handoff update, 10 September 2026: T00-T19 are implemented in `736af8e`. Start with [testing and usage](HOW-TO-TEST-AND-USE.md) and [build results](BUILD-RESULTS.md). The instructions below are the preserved build mandate; do not restart implementation from scratch. The user subsequently authorized committing and pushing this branch, but not live activation or deployment.
+
 Copy the text below into a fresh coding session with filesystem access to this machine.
 
 ---

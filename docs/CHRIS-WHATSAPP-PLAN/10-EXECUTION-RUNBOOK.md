@@ -1,5 +1,7 @@
 # Autonomous execution and release runbook
 
+> Implementation handoff update, 10 September 2026: T00-T19 are implemented in `736af8e`. Start with [testing and usage](HOW-TO-TEST-AND-USE.md) and [build results](BUILD-RESULTS.md). The instructions below are the preserved build mandate; do not restart implementation from scratch. The user subsequently authorized committing and pushing this branch, but not live activation or deployment.
+
 ## Build boundaries
 
 The current user request authorizes this implementation plan and an autonomous software build following it. It does not authorize live outreach, number purchase/registration, third-party messages, secret edits, SQL/auth/RLS/billing/deploy changes or public deployment. Implement the mechanism and exact unavailable-state behaviour fully. Do not ask the user routine implementation questions; use the decisions in this plan. Never substitute unapproved external actions for missing test fixtures.

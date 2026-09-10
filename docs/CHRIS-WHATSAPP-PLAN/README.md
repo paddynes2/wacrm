@@ -1,6 +1,8 @@
 # Chris in WhatsApp: implementation contract
 
-Status: BUILD PLAN, not an implementation or live-launch acceptance.
+Status update, 10 September 2026: software implemented in `736af8e` on `codex/chris-wa-build-20260910`. Live activation remains off and unverified.
+
+Start with [Test and use Chris](HOW-TO-TEST-AND-USE.md), then [build results](BUILD-RESULTS.md), [acceptance evidence](ACCEPTANCE-EVIDENCE.md) and [operations](OPERATIONS.md). The numbered documents below preserve the original implementation contract.
 Prepared: 10 September 2026. Executable baseline: WACRM `e4d0525`; checked-out documentation baseline: `657ab22`.
 
 ## The product

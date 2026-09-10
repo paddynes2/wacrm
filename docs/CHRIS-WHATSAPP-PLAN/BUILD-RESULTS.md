@@ -5,12 +5,13 @@ T00-T19 software implementation is complete in the isolated worktree. Live activ
 - Worktree: `C:/wacrm-chris-build-20260910`
 - Branch: `codex/chris-wa-build-20260910`
 - Base: `c54fde5` (the supplied plan checkout)
-- Implementation commit: this scoped commit; resolve with `git log -1 --format=%H` on the branch. No merge or push.
+- Implementation commit: `736af8e`. The follow-up documentation commit adds [testing and usage](HOW-TO-TEST-AND-USE.md).
+- Publication scope: user authorized pushing this implementation branch on 10 September 2026. No main-branch merge or deployment is authorized by that push.
 - T00 source manifest: all 37 source hashes matched; no source drift. Original Python baseline 246 passed; TypeScript baseline 978 passed / 97 files.
 
 ## Task ledger
 
-All rows belong to the same scoped implementation commit. Detailed scenario references are in the [162-ID acceptance evidence index](ACCEPTANCE-EVIDENCE.md).
+All rows belong to implementation commit `736af8e`. Detailed scenario references are in the [162-ID acceptance evidence index](ACCEPTANCE-EVIDENCE.md).
 
 | Task | Completed implementation and verification |
 |---|---|
@@ -69,7 +70,7 @@ The final synthetic workspace was paused and messaging explicitly disabled. QA h
 
 ## External-only boundaries
 
-No live WhatsApp mutation, paid model/search operation, number purchase/linking, external message, migration, auth/RLS change, secret edit, billing/deploy edit, merge, push or publication occurred.
+During implementation, no live WhatsApp mutation, paid model/search operation, number purchase/linking, external message, migration, auth/RLS change, secret edit, billing/deploy edit, merge, push or publication occurred. The later user-authorized branch push publishes the code and documentation only.
 
 Live readiness deliberately remains unverified. A separately authorized activation must supply and verify the dedicated provider account/self contract, distinct principal and willing recipient, current ownership/contact scope, actual history retention/member normalization, provider price ceilings and allowance, installed CRM constraints/owner mapping and private callback configuration. Real model judgment quality has not been measured; the optional evaluation harness reports that explicitly and requires a separate paid-run flag.
 

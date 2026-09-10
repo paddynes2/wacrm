@@ -1,5 +1,9 @@
 # wacrm — CRM Template for WhatsApp
 
+> This branch includes the standalone Chris introduction product at `/chris`.
+> [Test and use Chris](docs/CHRIS-WHATSAPP-PLAN/HOW-TO-TEST-AND-USE.md) provides the local walkthrough, login and connected-operation prerequisites.
+> [Implementation evidence](docs/CHRIS-WHATSAPP-PLAN/BUILD-RESULTS.md): 421 Python / 1,018 TypeScript tests; live activation remains off.
+
 > Self-hostable CRM template for WhatsApp® — shared inbox, contacts,
 > sales pipelines, broadcasts, and no-code automations. Fork it, brand
 > it, host it.

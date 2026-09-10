@@ -1,5 +1,7 @@
 # Operating Chris
 
+For a first run, use [Test and use Chris](HOW-TO-TEST-AND-USE.md), which includes complete PowerShell commands and the synthetic login.
+
 Use `/chris` for briefing, people, introductions and settings. `/dogfood` remains available for legacy calendar and simulator work. The existing private Python ASGI factory composes both workflows; set the already-documented worker input in the host environment when operating it. No deployment or environment files are changed by this implementation.
 
 Live sending starts off. A verified distinct principal, connected dedicated WhatsApp identity, current brief, retained contact permission and the owner’s future-action setting are all required. A paid allowance defaults to zero. Public phone discovery is not contact permission. Unknown contact and relationship coverage remain visible gaps.

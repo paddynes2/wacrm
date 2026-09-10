@@ -1,6 +1,7 @@
 # Chris standalone dogfood
 
-The endeavour-to-WhatsApp introduction product is now at `/chris`. See the
+The endeavour-to-WhatsApp introduction product is now at `/chris`. Start with
+[Test and use Chris](CHRIS-WHATSAPP-PLAN/HOW-TO-TEST-AND-USE.md). See the
 [Chris operations guide](CHRIS-WHATSAPP-PLAN/OPERATIONS.md),
 [implementation results](CHRIS-WHATSAPP-PLAN/BUILD-RESULTS.md) and
 [acceptance evidence](CHRIS-WHATSAPP-PLAN/ACCEPTANCE-EVIDENCE.md).
